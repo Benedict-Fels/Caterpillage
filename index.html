@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Caterpillage</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Caterpillage</h1>
+      <p id="sub"></p>
+    </div>
+    <div class="hbtns">
+      <button id="admBtn" class="small adm" hidden>Admin</button>
+      <button id="sndBtn" class="small">Ton aus</button>
+      <button id="fullBtn" class="small">Vollbild</button>
+      <button id="ctrlBtn" class="small">Einstellungen</button>
+    </div>
+  </header>
+
+  <dialog id="ctrlDlg" aria-labelledby="ctrlTitle">
+    <form method="dialog">
+      <h2 id="ctrlTitle">Einstellungen</h2>
+      <fieldset>
+        <legend>Eingabe</legend>
+        <label><input type="radio" name="mode" value="mouse"> Maus oder Finger</label>
+        <label><input type="radio" name="mode" value="wasd"> WASD</label>
+        <label><input type="radio" name="mode" value="arrows"> Pfeiltasten</label>
+      </fieldset>
+      <fieldset id="steerSet">
+        <legend>Lenkung mit Tasten</legend>
+        <label><input type="radio" name="steer" value="abs"> Richtung: Die Taste gibt die Himmelsrichtung vor, zwei Tasten ergeben eine Diagonale</label>
+        <label><input type="radio" name="steer" value="rel"> Drehen: Links und rechts drehen die Raupe, vorwärts frisst sie los</label>
+      </fieldset>
+      <fieldset>
+        <legend>Anzeige</legend>
+        <label><input type="checkbox" id="optFull"> Vollbild (auf dem Handy automatisch an)</label>
+        <label><input type="checkbox" id="optNums"> Schadens- und Ertragszahlen im Spielfeld</label>
+        <div class="seg" id="optShake"><span>Wackeln</span><label><input type="radio" name="shake" value="0"> aus</label><label><input type="radio" name="shake" value="1"> leicht</label><label><input type="radio" name="shake" value="2"> stark</label></div>
+      </fieldset>
+      <fieldset>
+        <legend>Ton</legend>
+        <label class="rng"><span>Musik</span><input type="range" id="optMusic" min="0" max="100" step="5"><output id="oMusic"></output></label>
+        <label class="rng"><span>Effekte</span><input type="range" id="optSfx" min="0" max="100" step="5"><output id="oSfx"></output></label>
+        <label><input type="checkbox" id="optMute"> Stumm (Taste M)</label>
+      </fieldset>
+      <fieldset id="admSet" hidden>
+        <legend>Entwicklung</legend>
+        <label><input type="checkbox" id="optAdm"> Admin-Modus</label>
+      </fieldset>
+      <p class="note" style="margin-top:10px">Die aktive Fähigkeit löst du mit der Leertaste oder dem Button am Spielfeld aus. Pause mit Esc, P oder dem Pause-Knopf. Ton an/aus mit M.</p>
+      <button class="wide go" value="ok">Fertig</button>
+    </form>
+  </dialog>
+
+  <dialog id="choiceDlg" aria-labelledby="choiceTitle">
+    <h2 id="choiceTitle">Neue Fähigkeit</h2>
+    <p class="note" id="choiceNote"></p>
+    <div class="choices" id="choices"></div>
+  </dialog>
+
+  <dialog id="admDlg" aria-labelledby="admTitle">
+    <h2 id="admTitle">Admin-Modus</h2>
+    <p class="note">Nur zum Testen. Alles hier wirkt sofort auf den Spielstand. Vorher am besten "Stand merken".</p>
+    <div id="admBody"></div>
+    <button class="wide go" id="admClose">Schließen</button>
+  </dialog>
+
+  <!-- ===== Run ===== -->
+  <section id="game" class="cols">
+    <div>
+      <div class="stage">
+        <div class="hudtop">
+          <div class="res" id="resF"></div>
+          <div class="res k" id="resK"></div>
+          <div class="stam">
+            <div class="meter-head"><span>Ausdauer</span><output id="stO">0</output></div>
+            <div class="bar" id="stBar"><div class="fill" id="stFill"></div></div>
+          </div>
+          <button class="pausebtn" id="pauseBtn" aria-label="Pause" title="Pause (Esc)"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1.2"/><rect x="14" y="5" width="4" height="14" rx="1.2"/></svg></button>
+        </div>
+        <div class="cvwrap"><canvas id="cv" width="720" height="720" aria-label="Spielfeld mit Frucht und Raupe"></canvas></div>
+        <button class="abil" id="abilBtn" hidden></button>
+        <div class="overlay" id="pauseBox" hidden>
+          <div class="card" role="dialog" aria-labelledby="pauseTitle">
+            <h2 id="pauseTitle">Pause</h2>
+            <p class="note" id="pauseNote"></p>
+            <div class="pmenu">
+              <button class="go" id="pResume">Weiter <kbd>Esc</kbd></button>
+              <button id="pRestart">Neu starten</button>
+              <button id="pEnd">Run beenden</button>
+              <button id="pFull">Vollbild</button>
+              <button id="pCtrl">Einstellungen</button>
+              <button id="pAdm" class="adm" hidden>Admin</button>
+            </div>
+            <p class="note pfoot">Beides schreibt den Ertrag gut. Neu starten geht direkt mit einer frischen Frucht weiter, Run beenden führt zu den Upgrades.</p>
+          </div>
+        </div>
+        <div class="overlay" id="endBox" hidden>
+          <div class="card" role="dialog" aria-labelledby="endTitle">
+            <h2 id="endTitle">Erschöpft</h2>
+            <p class="note" id="endNote"></p>
+            <div class="gain" id="endGain"></div>
+            <div class="stats" id="endStats"></div>
+            <div class="meter" id="endMeter" hidden></div>
+            <button class="wide primary" id="toShop">Zu den Upgrades</button>
+          </div>
+        </div>
+      </div>
+      <div class="hint" id="hint"></div>
+    </div>
+
+    <aside class="panel runaside">
+      <h2>Frucht</h2>
+      <div class="stats" id="runStats"></div>
+      <div class="legend" id="legend"></div>
+      <div class="stats">
+        <span>Bisskraft</span><span id="vPow"></span>
+        <span>Bisse pro Sekunde</span><span id="vRate"></span>
+        <span>Segmente</span><span id="vSeg"></span>
+        <span>Maulgröße</span><span id="vMouth"></span>
+        <span>Krit</span><span id="vCrit"></span>
+        <span>Passiv</span><span id="vPass"></span>
+      </div>
+      <div class="meter" id="meter" hidden></div>
+    </aside>
+  </section>
+
+  <!-- ===== Upgrades ===== -->
+  <section id="shop" hidden>
+    <div class="cols">
+      <div class="treebox">
+        <div class="tree" id="tree"><svg id="treeLines" viewBox="0 0 100 100" aria-hidden="true"></svg></div>
+      </div>
+      <aside class="panel">
+        <div class="bank" id="bank"></div>
+        <div id="detail"></div>
+        <button class="wide go" id="nextRun">Nächster Run</button>
+        <div class="lastrun note" id="lastRun"></div>
+      </aside>
+    </div>
+    <div class="lower">
+      <div class="panel">
+        <h2>Welten</h2>
+        <div class="worlds" id="worlds"></div>
+      </div>
+      <div class="panel">
+        <h2>Fähigkeiten</h2>
+        <div class="slots" id="slots"></div>
+        <div class="abils" id="abils"></div>
+      </div>
+    </div>
+    <button class="small" id="wipe" style="margin-top:18px">Spielstand löschen</button>
+  </section>
+</div>
+
+<script src="js/util.js"></script>
+<script src="js/data.js"></script>
+<script src="js/save.js"></script>
+<script src="js/songs.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/stats.js"></script>
+<script src="js/fruit.js"></script>
+<script src="js/caterpillar.js"></script>
+<script src="js/eat.js"></script>
+<script src="js/run.js"></script>
+<script src="js/draw.js"></script>
+<script src="js/shop.js"></script>
+<script src="js/screens.js"></script>
+<script src="js/admin.js"></script>
+<script src="js/input.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
