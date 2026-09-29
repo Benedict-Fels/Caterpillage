@@ -8,11 +8,12 @@ function startRun(){
   setupGrid(W);
   clearFruit();
   GEN[W.id]();
+  genSpecial();
   finishFruit();
   Object.assign(run, { active: true, over: false, endT: 0, shown: false, stamina: S.stamina, max: S.stamina,
     f: 0, k: 0, bites: 0, crits: 0, broke: false, hardStreak: 0, touched: {}, moving: false,
     charge: 1, rauschT: 0, dash: 0, proj: null, pool: null, beamT: 0, beamTick: 0, beamEnd: null, beamAcc: 0,
-    molted: false, moltT: 0, sog: 0, sogCycle: 0, hairT: 0, hairFx: 0, clean: false, left: totals[1] + totals[2] + totals[3],
+    molted: false, moltT: 0, sog: 0, sogCycle: 0, hairT: 0, hairFx: 0, clean: false, left: totals[1] + totals[2] + totals[3] + totals[4], spDone: 0, spT: SP.def ? 2.6 : 0, dropSnd: 0,
     time: 0, spent: 0, warn: 0, sogGain: 0, m: {}, gF: 0, gK: 0, gT: 0 });
   paused = false; $('pauseBox').hidden = true;
   resetCat();
@@ -25,13 +26,14 @@ function startRun(){
 }
 
 const pctOf = k => totals[k] ? eaten[k] / totals[k] * 100 : 0;
-function endRun(){
+function endRun(quick = false){                            // quick: aus dem Pausenmenü, ohne Abschluss-Jingle
   if (run.over) return;
   run.over = true; run.stamina = 0; run.rauschT = 0; run.beamT = 0; run.beamEnd = null; run.dash = 0; run.moltT = 0; run.pool = null;
-  AU.stopBeam(); AU.song(null); AU.sfx(run.clean ? 'clean' : 'tired');
+  flushDrops();                                             // Tröpfchen unterwegs zählen noch
+  AU.stopBeam(); AU.song(null); if (!quick) AU.sfx(run.clean ? 'clean' : 'tired');
   paused = false; $('pauseBox').hidden = true;
   const test = cheat('noSave');                             // Admin: Testlauf ohne Gutschrift
-  const p = { 1: pctOf(1), 2: pctOf(2), 3: pctOf(3) };
+  const p = { 1: pctOf(1), 2: pctOf(2), 3: pctOf(3) }, sp = spSummary();
   if (!test){
     addCur(WI, 'f', run.f);
     addCur(WI, 'k', run.k);
@@ -39,7 +41,7 @@ function endRun(){
     const b = save.best[WI] || (save.best[WI] = { 1: 0, 2: 0, 3: 0 });
     for (const k in p) b[k] = Math.max(b[k], p[k]);
   }
-  save.last = { w: WI, f: run.f, k: run.k, bites: run.bites, crits: run.crits, broke: run.broke, clean: run.clean, p, test };
+  save.last = { w: WI, f: run.f, k: run.k, bites: run.bites, crits: run.crits, broke: run.broke, clean: run.clean, p, sp, test };
   persist();
 }
 
@@ -53,6 +55,7 @@ function showEnd(){
   $('endGain').innerHTML = g;
   const rows = [1, 2, 3].map(k => [w.layers[k].name, Math.round(L.p[k]) + ' %']);
   rows.push(['Bisse', L.bites]);
+  if (L.sp) rows.push([L.sp.label, L.sp.val]);
   if (L.crits) rows.push(['Kritische Bisse', L.crits]);
   if (L.test) rows.push(['Testlauf', 'nicht gutgeschrieben']);
   $('endStats').innerHTML = rows.map(([a, b]) => `<span>${a}</span><span>${b}</span>`).join('');
@@ -105,6 +108,7 @@ function update(dt){
       if (run.charge >= 1) AU.sfx('ready');
     }
     run.time += dt;
+    drainStep(dt);
     cat.t += dt * effRate();
     if (cat.t >= 1){ cat.t -= 1; cat.eStart = cat.e; cat.adv = 0; cat.bitten = false; }
   }
@@ -149,6 +153,8 @@ function update(dt){
     if (c.life <= 0){ crumbs.splice(i, 1); continue; }
     c.x += c.vx * dt; c.y += c.vy * dt; c.vx *= 0.9; c.vy *= 0.9;
   }
+  if (live) dropStep(dt);
+  run.spT = Math.max(0, (run.spT || 0) - dt);
   if (run.active) gainStep(dt);
   for (let i = pops.length - 1; i >= 0; i--){
     const q = pops[i];

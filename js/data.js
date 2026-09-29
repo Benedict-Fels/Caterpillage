@@ -2,7 +2,8 @@
 /* =====================================================================
    Welten
    Schicht 1 = außen, 2 = Mitte, 3 = innen.
-   hp = Härte, cost = Ausdauer je Biss, f/k = Frucht-/Kernwährung je Pixel,
+   drain = Grundverbrauch an Ausdauer pro Sekunde (läuft auch im Stand),
+   hp = Härte, cost = zusätzliche Ausdauer je Biss (härtestes getroffenes Material), f/k = Frucht-/Kernwährung je Pixel,
    hard = harte Schicht (Zähigkeit wirkt, Schub stoppt), juicy = Saftsog wirkt.
    R = Fruchtradius im Raster. Echte Durchmesser (Johannisbeere ~9 mm,
    Kirsche ~22 mm, Walnuss mit Hülle ~45 mm, Pflaume ~50, Apfel ~80,
@@ -11,11 +12,11 @@
    ===================================================================== */
 const WORLDS = [
   {
-    id: 'johannisbeere', name: 'Johannisbeere', fruitCur: 'Beerensaft', coreCur: 'Beerenkerne', color: '#D42A40', R: 78,
+    id: 'johannisbeere', spHost: 2, spRot: 0.86, drain: 0.5, name: 'Johannisbeere', fruitCur: 'Beerensaft', coreCur: 'Beerenkerne', color: '#D42A40', R: 78,
     layers: {
-      1: { name: 'Schale', hp: 3.5, cost: 2, f: 1, hard: true, sw: '#7E0818', note: 'zäh, kostet doppelt Ausdauer' },
-      2: { name: 'Fruchtfleisch', hp: 1.4, cost: 1, f: 0.15, juicy: true, sw: '#E03448', note: 'weich und saftig' },
-      3: { name: 'Kerne', hp: 70, cost: 4, k: 1, hard: true, sw: '#EBDDBA', note: 'steinhart' },
+      1: { name: 'Schale', hp: 3.5, cost: 1.4, f: 1, hard: true, sw: '#7E0818', note: 'zäh, kostet doppelt Ausdauer' },
+      2: { name: 'Fruchtfleisch', hp: 1.4, cost: 0.7, f: 0.15, juicy: true, sw: '#E03448', note: 'weich und saftig' },
+      3: { name: 'Kerne', hp: 210, cost: 2.8, k: 1, hard: true, sw: '#EBDDBA', note: 'steinhart' },
     },
     breakLayer: 2, breakText: 'Durchbruch!', unlockCost: 0,
     hint(r){
@@ -25,11 +26,11 @@ const WORLDS = [
     },
   },
   {
-    id: 'kirsche', name: 'Kirsche', fruitCur: 'Kirschsaft', coreCur: 'Kirschkerne', color: '#8A0E26', R: 122,
+    id: 'kirsche', spHost: 2, spRot: 0.88, drain: 0.8, name: 'Kirsche', fruitCur: 'Kirschsaft', coreCur: 'Kirschkerne', color: '#8A0E26', R: 122,
     layers: {
-      1: { name: 'Haut', hp: 30, cost: 4, f: 1, hard: true, sw: '#4E0514', note: 'fest und glänzend' },
-      2: { name: 'Fruchtfleisch', hp: 6, cost: 1.5, f: 0.15, juicy: true, sw: '#A8142E', note: 'dunkel und saftig' },
-      3: { name: 'Stein', hp: 220, cost: 7, k: 1, hard: true, sw: '#D9C9A3', note: 'ein großer, steinharter Kern' },
+      1: { name: 'Haut', hp: 30, cost: 2.8, f: 1, hard: true, sw: '#4E0514', note: 'fest und glänzend' },
+      2: { name: 'Fruchtfleisch', hp: 6, cost: 1.05, f: 0.15, juicy: true, sw: '#A8142E', note: 'dunkel und saftig' },
+      3: { name: 'Stein', hp: 660, cost: 4.9, k: 1, hard: true, sw: '#D9C9A3', note: 'ein großer, steinharter Kern' },
     },
     breakLayer: 2, breakText: 'Durchbruch!', unlockCost: 40,
     hint(r){
@@ -39,11 +40,13 @@ const WORLDS = [
     },
   },
   {
-    id: 'walnuss', name: 'Walnuss', fruitCur: 'Nussholz', coreCur: 'Walnusskerne', color: '#8A6A3E', R: 175,
+    id: 'walnuss', spHost: 1, spHosts: { blase: 3, kristall: 3 },
+    spOver: { blase: { name: 'Öltropfen', plural: 'Öltropfen', mult: 1.5, tint: [238, 198, 84], dropCol: '#E9C457',
+      L: { sw: '#E9C457', note: 'platzt auf, das Öl fließt zur Raupe (Walnusskerne)' } } }, spRot: 0.87, drain: 2.2, name: 'Walnuss', fruitCur: 'Nussholz', coreCur: 'Walnusskerne', color: '#8A6A3E', R: 175,
     layers: {
-      1: { name: 'Grüne Hülle', hp: 10, cost: 2, f: 0.2, sw: '#5E8A34', note: 'weich, bringt wenig' },
-      2: { name: 'Holzschale', hp: 250, cost: 6, f: 0.5, hard: true, sw: '#8E6438', note: 'steinhart, auch die Trennwände innen' },
-      3: { name: 'Nusskern', hp: 15, cost: 2, k: 0.03, juicy: true, sw: '#DDBF86', note: 'weich, der Lohn' },
+      1: { name: 'Grüne Hülle', hp: 10, cost: 1.4, f: 0.2, sw: '#5E8A34', note: 'weich, bringt wenig' },
+      2: { name: 'Holzschale', hp: 270, cost: 4.2, f: 0.5, hard: true, sw: '#8E6438', note: 'steinhart, auch die Trennwände innen' },
+      3: { name: 'Nusskern', hp: 15, cost: 1.4, k: 0.03, juicy: true, sw: '#DDBF86', note: 'weich, der Lohn' },
     },
     breakLayer: 3, breakText: 'Geknackt!', unlockCost: 200,
     hint(r){
@@ -53,6 +56,23 @@ const WORLDS = [
     },
   },
 ];
+const EMPTY_BITE = 0.2;                                  // Ausdauer für einen Biss, der nichts trifft
+/* =====================================================================
+   Sonderstellen (Schicht 4). Pro Frucht genau eine Art. layer(host, w) leitet die
+   Werte aus der Wirtsschicht ab (spHost der Welt): Fruchtfleisch, bei der Walnuss die grüne Hülle.
+   spHosts = abweichender Wirt je Art (Walnuss: Öltropfen und Kristalle im Nusskern), spKinds = erlaubte Arten,
+   spOver = Abweichungen je Art (Walnuss: Öltropfen statt Saftblase),
+   spRot = Abstand der Faulstelle von der Mitte (relativ, sie sitzt auf dem Rand).
+   n = Anzahl von–bis, r = Radius relativ zur Frucht.
+   ===================================================================== */
+const SPECIAL = {
+  blase: { name: 'Saftblase', plural: 'Saftblasen', n: [2, 4], r: 0.1, mult: 3.5,
+    layer: h => ({ name: 'Saftblase', hp: h.hp, cost: h.cost, f: 0, juicy: true, sw: '#F4A8B4', note: 'platzt beim Anbeißen, der Saft fliegt zur Raupe', snd: 'squish' }) },
+  kristall: { name: 'Zuckerkristall', plural: 'Zuckerkristalle', n: [2, 4], r: 0.15,
+    layer: h => ({ name: 'Zuckerkristall', hp: h.hp * 3, cost: h.cost * 2, f: (h.f || 0) * 5, k: (h.k || 0) * 1.5, hard: true, sw: '#DDA24A', note: 'hart, aber sehr süß', snd: 'stone' }) },
+  faul: { name: 'Faulstelle', plural: 'Faulstellen', n: [1, 2], r: 0.2,
+    layer: h => ({ name: 'Faulstelle', hp: h.hp * 0.4, cost: h.cost, f: h.f, juicy: h.juicy, sw: '#7A5230', note: 'weich, ein Weg nach innen', snd: 'squish' }) },
+};
 const FUTURE = [
   { name: 'Pflaume', color: '#4B2E6B' }, { name: 'Apfel', color: '#8DB33A' }, { name: 'Kürbis', color: '#E07A1F' },
 ];
@@ -111,9 +131,9 @@ const ABIL = {
   brennhaare: { name: 'Brennhaare', short: 'Haare', kind: 'passiv',
     nodes: [
       { name: 'Brennkraft', val: l => `${12 + 4 * l} % Bisskraft` },
-      { name: 'Länge', val: l => `${fmt(2.5 + 0.8 * l)} weit` },
+      { name: 'Länge', val: l => `${fmt(hairReach(l))} weit` },
       { name: 'Takt', val: l => `alle ${fmt(0.35 - 0.04 * l)} s` } ],
-    desc: L => `Solange die Raupe unterwegs ist, brennen die Haare alle ${fmt(0.35 - 0.04 * L[2])} s rund um den Körper: ${12 + 4 * L[0]} % der Bisskraft, ${fmt(2.5 + 0.8 * L[1])} weit.` },
+    desc: L => `Solange die Raupe unterwegs ist, brennen die Haare alle ${fmt(0.35 - 0.04 * L[2])} s rund um den Körper: ${12 + 4 * L[0]} % der Bisskraft, ${fmt(hairReach(L[1]))} weit.` },
   saftsog: { name: 'Saftsog', short: 'Sog', kind: 'passiv',
     nodes: [
       { name: 'Menge', val: l => `${fmt(0.6 + 0.2 * l)} je 100 Happen` },
@@ -133,6 +153,7 @@ const ABIL = {
       { name: 'Kegel', val: l => `${coneDeg(l)}° breit` } ],
     desc: L => `Jeder Biss weicht einen Kegel vor dem Kopf auf, auch hinter der Schale: −${4 + 2 * L[0]} % Härte.` },
 };
+function hairReach(l){ return 4.5 + 1 * l; }              // Reichweite der Brennhaare
 function coneDeg(l){ return 74 + 10 * l; }                // Öffnungswinkel der Gabeldrüse, gleichmäßig je Stufe
 const abNode = (id, i) => lv(`ab_${id}_${i}`);
 const abL = id => [0, 1, 2].map(i => abNode(id, i));
@@ -193,7 +214,7 @@ const UPG = [
   { id: 'maul2', w: 1, ring: 3, br: 'Maul', off: 10, parent: 'maul', need: 2, name: 'Weiter Schlund', max: 5, cost: 200, grow: 1.9,
     desc: 'Noch mehr Maul: +0,3 je Stufe.', show: SH.mouth },
   { id: 'ausdauer2', w: 1, ring: 3, br: 'Ausdauer', off: -10, parent: 'ausdauer', need: 3, name: 'Fettreserve', max: 15, cost: 50, grow: 1.55,
-    desc: 'Mehr Ausdauer: +12 je Stufe.', show: SH.stamina },
+    desc: 'Mehr Ausdauer: +10 je Stufe.', show: SH.stamina },
   { id: 'verdauung2', w: 1, ring: 3, br: 'Verdauung', off: -10, parent: 'verdauung', need: 3, name: 'Kirschmagen', max: 15, cost: 80, grow: 1.6,
     desc: 'Mehr Kirschsaft: +15 % je Stufe. Wirkt nur in der Kirsche.', show: SH.yieldOf(1) },
   { id: 'tempo2', w: 1, ring: 3, br: 'Tempo', off: -10, parent: 'tempo', need: 1, name: 'Takt II', max: 7, cost: 80, grow: 1.7,
@@ -209,7 +230,7 @@ const UPG = [
   { id: 'mandibeln2', w: 2, ring: 4, br: 'Kiefer', off: 20, parent: 'mandibeln', need: 1, name: 'Stahlmandibeln', max: 8, cost: 600, grow: 1.8,
     desc: 'Je Stufe +15 % Bisskraft.', show: SH.power },
   { id: 'ausdauer3', w: 2, ring: 4, br: 'Ausdauer', off: -10, parent: 'ausdauer2', need: 3, name: 'Winterspeck', max: 15, cost: 50, grow: 1.55,
-    desc: 'Ausdauer für lange Runs: +25 je Stufe.', show: SH.stamina },
+    desc: 'Mehr Ausdauer: +10 je Stufe.', show: SH.stamina },
   { id: 'zaeh2', w: 2, ring: 4, br: 'Ausdauer', off: 10, parent: 'zaeh', need: 1, name: 'Hornhaut', max: 5, cost: 300, grow: 1.9,
     desc: 'Harte Schichten kosten noch weniger Ausdauer: −4 % je Stufe.', show: SH.hard },
   { id: 'verdauung3', w: 2, ring: 4, br: 'Verdauung', off: -10, parent: 'verdauung2', need: 2, name: 'Nussmagen', max: 15, cost: 80, grow: 1.6,

@@ -2,6 +2,7 @@
 /* =====================================================================
    Spielstand
    ===================================================================== */
+/* Die Speicher-Schlüssel tragen noch den alten Arbeitstitel "caterpillage", damit vorhandene Spielstände erhalten bleiben. */
 const SAVE_KEY = 'caterpillage.save.v3', OLD_KEYS = ['caterpillage.save.v2', 'caterpillage.save.v1'];
 const freshSave = () => ({ v: 3, cur: {}, lv: {}, runs: [0, 0, 0, 0, 0, 0], unlocked: 1, world: 0,
   abil: { own: {}, from: {}, active: null, passive: null }, choice: null, best: {}, last: null });

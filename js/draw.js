@@ -15,7 +15,7 @@ function drawCat(){
   const tired = run.over ? 0.72 : 1;
   const rausch = run.rauschT > 0;
   const hairs = save.abil.passive === 'brennhaare';
-  const hairLen = hairs ? (2.5 + 0.8 * abNode('brennhaare', 1)) : 0;
+  const hairLen = hairs ? hairReach(abNode('brennhaare', 1)) : 0;
   for (let i = n - 1; i >= 0; i--){
     const s = segs[i], prev = segs[Math.max(0, i - 1)];
     const a = i ? Math.atan2(prev.y - s.y, prev.x - s.x) : cat.dir;
@@ -103,6 +103,7 @@ function draw(){
     ctx.beginPath(); ctx.arc(run.pool.x * SC, run.pool.y * SC, run.pool.r * SC, 0, 6.283); ctx.fill();
   }
   drawCat();
+  drawSpecial();
 
   if (run.beamEnd){
     const h = cat.trail[0];
@@ -169,9 +170,11 @@ function buildRunPanel(){
   $('resF').title = W.fruitCur;
   $('resK').innerHTML = `${icon(WI, 'k')}<span id="sK">0</span>`;
   $('resK').title = W.coreCur;
-  $('runStats').innerHTML = [1, 2, 3].map(k => `<span>${W.layers[k].name}</span><span id="sL${k}">0 %</span>`).join('');
+  $('runStats').innerHTML = [1, 2, 3].map(k => `<span>${W.layers[k].name}</span><span id="sL${k}">0 %</span>`).join('')
+    + (SP.def ? `<span>${SP.def.plural}</span><span id="sL4"></span>` : '');
   $('legend').innerHTML = [1, 2, 3].map(k =>
-    `<div><span class="sw" style="background:${W.layers[k].sw}"></span>${W.layers[k].name}, ${W.layers[k].note}</div>`).join('');
+    `<div><span class="sw" style="background:${W.layers[k].sw}"></span>${W.layers[k].name}, ${W.layers[k].note}</div>`).join('')
+    + (SP.def ? `<div><span class="sw" style="background:${W.layers[4].sw}"></span>${SP.def.name}, ${W.layers[4].note}</div>` : '');
   const id = save.abil.active, b = $('abilBtn');
   b.hidden = !id;
   b.dataset.t = '';
@@ -199,6 +202,7 @@ function hud(){
   $('sF').textContent = fmtInt(run.f);
   $('sK').textContent = fmtInt(run.k);
   for (const k of [1, 2, 3]) $('sL' + k).textContent = Math.round(pctOf(k)) + ' %';
+  if (SP.def && $('sL4')) $('sL4').textContent = spSummary().val;
   $('vPow').textContent = fmt2(effPower());
   $('vRate').textContent = fmt2(effRate());
   $('vSeg').textContent = S.segs;
@@ -223,7 +227,7 @@ function hud(){
   const hint = $('hint');
   let msg, warn = false;
   if (run.over) msg = 'Keine Kraft mehr.';
-  else if (run.bites === 0) msg = (save.runs.every(x => !x) ? CTRL_HINT[ctrl.mode] + ' Jeder Biss kostet Ausdauer.' : `Neue ${W.name}, volle Ausdauer. Los.`)
+  else if (run.bites === 0) msg = (save.runs.every(x => !x) ? CTRL_HINT[ctrl.mode] + ' Die Ausdauer sinkt mit der Zeit, jeder Biss kostet extra.' : `Neue ${W.name}, volle Ausdauer. Los.`)
     + (save.abil.active ? ` ${ABIL[save.abil.active].name} ist nach ${S.cd} s wieder bereit.` : '');
   else if (run.hardStreak > 2){ msg = 'Zu hart für diesen Biss. Mehr Bisskraft hilft, oder dranbleiben.'; warn = true; }
   else msg = W.hint(run);

@@ -18,13 +18,16 @@
      Biss fällt, spielt der Biss sie selbst; steht die Raupe, spielt die Musik sie leise.
    sync: true = Tempo kommt vom Biss-Takt der Raupe, sonst bpm = feste Schläge pro Minute.
 
-   Instrumente: marimba, pizz, celesta, bass, pluck (Leadsynth), sub (Groove-Bass).
-   Trommeln: kick, clap, hat, ohat (offene Hi-Hat), wood (Holzblock).
+   Jede Welt hat einen eigenen Song (Schlüssel = Welt-id), Welten ohne eigenen Song nutzen johannisbeere.
+
+   Instrumente: marimba, pizz, celesta, bass, pluck (Leadsynth), sub (Groove-Bass), kalimba, keys (E-Piano).
+   Trommeln: kick, clap, hat, ohat (offene Hi-Hat), wood (Holzblock), snap (Fingerschnipsen),
+     shaker, tom (Holztrommel, Tonhöhe als 3. Wert), rim (Rimshot).
    ===================================================================== */
 const SONGS = {
-  // Run-Song für alle Welten: C-Dur, Four-on-the-floor, Oktav-Bass, Clap auf 2 und 4, Offbeat-Hats.
+  // Johannisbeere: C-Dur, Four-on-the-floor, Oktav-Bass, Clap auf 2 und 4, Offbeat-Hats, Rechteck-Lead.
   // Tempo kommt vom Biss-Takt (sync), Kick und tiefer Bass auf den Bisszählzeiten spielt der Biss selbst (beat).
-  groove: { sync: true, key: 60, scale: 'major', res: 16, form: ['A', 'B', 'A', 'B'],
+  johannisbeere: { sync: true, key: 60, scale: 'major', res: 16, form: ['A', 'B', 'A', 'B'],
     lead: I => I > 0.6 ? [['pluck', 0.9, 0], ['marimba', 0.25, 0]] : [['marimba', 0.5, 0]],
     A: { ch: '0:M 7:M 9:m 5:M 0:M 7:M 5:M 7:M', mel: [
       "1' . 5 . | 1' . 3' . | . 2' . 1' | . . 5 .",
@@ -54,6 +57,77 @@ const SONGS = {
       if (st % 4 === 2){ if (I > 0.6) x.dr('ohat', 0.7); for (const m of x.chord(64)) x.n('pluck', m, 0.35); }
       if (st % 2 === 1) x.dr('hat', I > 0.6 ? (st % 4 === 3 ? 0.6 : 0.4) : 0.3);
       if (I > 0.6 && sec === 'B' && bar === 7 && st >= 12) x.dr('clap', 0.35 + (st - 12) * 0.15);   // kleiner Wirbel vor dem Teilwechsel
+    } },
+  // Kirsche: Funk in d-Moll mit leichtem Swing. Pizzicato-Lead, E-Piano-Stabs auf den Nachschlägen,
+  // hüpfender Bass mit Geister-Sechzehnteln, Fingerschnipsen und Rimshot.
+  kirsche: { sync: true, key: 62, scale: 'minor', res: 16, swing: 0.1, form: ['A', 'B', 'A', 'B'],
+    lead: I => I > 0.6 ? [['pizz', 0.95, 0], ['keys', 0.35, 0]] : [['keys', 0.6, 0]],
+    A: { ch: '0:m7 5:7 0:m7 5:7 8:M7 7:7 0:m 0:m', mel: [
+      "1' . 7 5 | . 3 . 5 | . . 7 . | 1' - . .",
+      "4 . . 5 | . 7 . 5 | 4 . 2 . | 1 - . .",
+      "1' . 7 5 | . 3 . 5 | . . 7 . | 1' . 3' .",
+      "2' - 1' . | 7 . 5 . | 4 . 5 . | 7 - . .",
+      "6 . . 1' | . 3' . 2' | 1' . 6 . | 5 - . .",
+      "#7 . . 2' | . 5' . 4' | 2' . #7 . | 5 - . .",
+      "1' . 5 . | 3 . 5 . | 1' . 2' . | 3' - . .",
+      "2' . 1' . | 7 . 5 . | 3 . . . | . . . ."] },
+    B: { ch: '5:m7 10:7 3:M7 8:M7 5:m7 7:7 0:m 0:m', mel: [
+      "4' . 4' . | 3' . 1' . | 6 . 4 . | 6 - . .",
+      "3' . 3' . | 2' . 7 . | 5 . 3 . | 5 - . .",
+      "3' - . 5' | - . 3' . | 1' . 7 . | 1' - . .",
+      "6 . 1' . | 3' . 1' . | 6 . 5 . | 6 - . .",
+      "4' . 4' . | 3' . 1' . | 6 . 4 . | 1' - . .",
+      "#7 . 2' . | 5' - . 4' | 2' . #7 . | 5 - . .",
+      "1' . 2' . | 3' . 5' . | 4' . 3' . | 1' - . .",
+      "1' - - - | . . . . | 5 . 7 . | 1' . 2' ."] },
+    // Kick auf den Zählzeiten, Bass: tief auf der Zählzeit, Oktave auf dem Nachschlag
+    beat(st, x, v){
+      if (st % 4 === 0) x.dr('kick', v);
+      if (st % 2 === 0) x.n('sub', x.bassLo + (st % 4 ? 12 : 0), v);
+    },
+    acc(st, x, I, sec, bar){
+      if (st === 4 || st === 12){ x.dr('snap', 0.8); if (I > 0.6) x.dr('clap', 0.5); }
+      if (st === 3 || st === 6 || st === 11) for (const m of x.chord(62)) x.n('keys', m, st === 6 ? 0.35 : 0.25);
+      if (I > 0.6 && (st === 7 || st === 15)) x.n('sub', x.bassLo + 12, 0.45);         // Geister-Sechzehntel im Bass
+      if (st % 2 === 1) x.dr('shaker', st % 4 === 3 ? 0.5 : 0.3);
+      if (I > 0.6 && st % 4 === 2) x.dr('hat', 0.6);
+      if (I > 0.6 && (st === 10 || st === 14)) x.dr('rim', 0.5);
+      if (I > 0.6 && sec === 'B' && bar === 7 && st >= 12) x.dr('snap', 0.4 + (st - 12) * 0.15);
+    } },
+  // Walnuss: G-Mixolydisch, Kalimba-Melodie, Holzblöcke und Holztrommeln statt Clap, Bass in Quinten.
+  walnuss: { sync: true, key: 55, scale: 'mixo', res: 16, form: ['A', 'B', 'A', 'B'],
+    lead: I => I > 0.6 ? [['kalimba', 0.8, 0], ['marimba', 0.18, 12]] : [['kalimba', 0.65, 0]],
+    A: { ch: '0:M 10:M 5:M 0:M 0:M 10:M 5:M 7:M', mel: [
+      "5 . 1' . | 5 . 3' . | 2' . 1' . | 5 - . .",
+      "4 . 7 . | 4 . 2' . | 1' . 7 . | 4 - . .",
+      "4 . 6 . | 1' . 6 . | 4 . 6 . | 1' - 2' .",
+      "3' - . 2' | - . 1' . | 5 . . . | . . . .",
+      "5 . 1' . | 5 . 3' . | 2' . 1' . | 5 . 6 .",
+      "7 . 2' . | 4' . 2' . | 1' . 7 . | 4 - . .",
+      "6 . 4 . | 1' . 6 . | 3' . 2' . | 1' - . .",
+      "2' . . #7 | . . 5 . | #7 . 1' . | 2' . 5' ."] },
+    B: { ch: '9:m 5:M 7:M 0:M 9:m 5:M 7:M 7:M', mel: [
+      "6 . . 6 | 1' . 3' . | 2' . 1' . | 6 - . .",
+      "4 . . 4 | 6 . 1' . | 3' . 2' . | 1' - . .",
+      "5 . . 5 | #7 . 2' . | 5' . 4' . | 2' - . .",
+      "1' - . 3' | - . 5' . | 3' . 2' . | 1' - . .",
+      "6 . . 6 | 1' . 3' . | 5' . 3' . | 2' - . .",
+      "4 . . 4 | 6 . 1' . | 4' . 3' . | 1' - . .",
+      "5 . #7 . | 2' . 5' . | 4' . 2' . | #7 - . .",
+      "2' - - - | . . . . | 5 . #7 . | 2' . 1' ."] },
+    // Kick auf 1 und 3, Holztrommel auf 2 und 4; Bass: Grundton und Quinte
+    beat(st, x, v){
+      if (st % 8 === 0) x.dr('kick', v);
+      else if (st % 4 === 0) x.dr('tom', v * 0.9, 130);
+      if (st % 2 === 0) x.n('sub', x.bassLo + (st % 4 ? 7 : 0), v);
+    },
+    acc(st, x, I, sec, bar){
+      if ([3, 6, 10, 14].includes(st)) x.dr('wood', st === 6 || st === 14 ? 0.5 : 0.35, st === 6 || st === 14 ? 720 : 980);
+      if (st % 2 === 0){ const c = x.chord(55); x.n('marimba', c[(st / 2) % c.length], 0.12); }
+      if (I > 0.6 && st % 2 === 1) x.dr('shaker', st % 4 === 3 ? 0.45 : 0.25);
+      if (I > 0.6 && st === 12) x.dr('clap', 0.35);
+      if (I > 0.6 && (st === 13 || st === 15)) x.dr('tom', 0.35, st === 13 ? 200 : 170);
+      if (I > 0.6 && sec === 'B' && bar === 7 && st >= 8 && st % 2 === 0) x.dr('tom', 0.4 + (st - 8) * 0.06, 220 - (st - 8) * 12);
     } },
   // Upgrade-Screen: F-Dur, ruhig, Celesta über weicher Fläche, Spieluhr-Arpeggio (festes Tempo)
   shop: { bpm: 76, key: 65, scale: 'major', res: 8, lead: [['celesta', 0.5, 0]], form: ['A', 'B', 'A-', 'B'],

@@ -8,7 +8,7 @@ function show(which){
   $('game').hidden = which !== 'game';
   $('shop').hidden = which !== 'shop';
   document.body.classList.toggle('ingame', which === 'game');
-  AU.song(which === 'game' ? 'groove' : 'shop');
+  AU.song(which === 'game' ? W.id : 'shop');
   if (which === 'shop'){ paused = false; $('pauseBox').hidden = true; renderShop(); if (save.choice) openChoice(); }
 }
 
@@ -33,8 +33,14 @@ function resumeGame(){
 }
 $('pauseBtn').onclick = e => { e.currentTarget.blur(); pauseGame(); };
 $('pResume').onclick = resumeGame;
-$('pRestart').onclick = () => { if (run.active && !run.over) endRun(); startRun(); };   // Ertrag gutschreiben, sofort neue Frucht
-$('pEnd').onclick = () => { paused = false; $('pauseBox').hidden = true; if (run.active && !run.over) endRun(); };
+$('pRestart').onclick = () => { if (run.active && !run.over) endRun(true); startRun(); };   // Ertrag gutschreiben, sofort neue Frucht
+// Run beenden: Ertrag gutschreiben und ohne Ergebnis-Fenster direkt ins Hauptmenü
+$('pEnd').onclick = () => {
+  paused = false; $('pauseBox').hidden = true;
+  if (run.active && !run.over) endRun(true);
+  run.shown = true; run.active = false;
+  show('shop');
+};
 $('pFull').onclick = () => { toggleFull(); $('pFull').textContent = ui.full ? 'Vollbild aus' : 'Vollbild an'; };
 $('pCtrl').onclick = () => { syncCtrlForm(); dlg.showModal(); };
 $('pAdm').onclick = () => openAdmin();

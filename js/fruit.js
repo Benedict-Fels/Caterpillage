@@ -4,8 +4,8 @@
    ===================================================================== */
 let SIM = 240, N = SIM * SIM, SC = 3, CX = 132, CY = 120, R = 78;
 let type, hp, hpMax, col, img, D;
-const totals = { 1: 0, 2: 0, 3: 0 };
-const eaten = { 1: 0, 2: 0, 3: 0 };
+const totals = { 1: 0, 2: 0, 3: 0, 4: 0 };               // 4 = Sonderstelle
+const eaten = { 1: 0, 2: 0, 3: 0, 4: 0 };
 const fruitCv = document.createElement('canvas');
 const fctx = fruitCv.getContext('2d');
 
@@ -32,7 +32,7 @@ function put(i, k, c, n){
   col[i*3] = c[0]; col[i*3+1] = c[1]; col[i*3+2] = c[2];
   totals[k]++;
 }
-function clearFruit(){ for (const k of [1, 2, 3]){ totals[k] = 0; eaten[k] = 0; } }
+function clearFruit(){ for (const k of [1, 2, 3, 4]){ totals[k] = 0; eaten[k] = 0; } }
 function finishFruit(){
   for (let i = 0; i < N; i++){
     const o = i * 4;

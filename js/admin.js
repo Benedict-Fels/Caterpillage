@@ -106,12 +106,16 @@ function renderAdmin(){
     <div class="arow"><label>Bisskraft × <input class="sm" type="number" min="0.1" step="0.5" data-num="pow" value="${adm.pow}"></label>
       <label>Biss-Takt × <input class="sm" type="number" min="0.1" step="0.25" data-num="rate" value="${adm.rate}"></label>
       <label>Spieltempo × <input class="sm" type="number" min="0.1" max="8" step="0.25" data-num="speed" value="${adm.speed}"></label></div>
+    <div class="arow"><label>Sonderstelle <select data-sp>${[['', 'zufällig'], ...Object.entries(SPECIAL).map(([k, d]) => [k, d.name]), ['none', 'keine']]
+      .map(([k, n]) => `<option value="${k}" ${(adm.sp || '') === k ? 'selected' : ''}>${n}</option>`).join('')}</select></label><span class="note">gilt ab dem nächsten Run</span></div>
     <p class="note">Messwerte zeigen je Quelle (Biss, Brennhaare, Spucke …) den Schaden ohne Überschuss, DPS, gefressene Pixel und Ertrag – so lässt sich vergleichen, wie stark eine Fähigkeit wirklich ist.</p></div>`;
 
   h += `<div class="asec"><h3>Musik</h3>
     <div class="arow"><label>Bisse/s <input class="sm" type="number" min="0.8" max="3.5" step="0.05" id="admSongRate" value="${adm.songRate || 1}"></label>
-      <button data-a="song">Run-Song als WAV speichern</button><button data-a="songShop">Shop-Musik als WAV</button><span class="note" id="admSongNote"></span></div>
-    <p class="note">Rendert den Song einmal komplett (32 Takte), so als würde die Raupe mit dieser Biss-Geschwindigkeit durchgehend fressen. 1 Biss/s = 120 BPM.</p></div>`;
+      <select id="admSong">${WORLDS.filter(w => SONGS[w.id]).map(w => `<option value="${w.id}" ${adm.song === w.id ? 'selected' : ''}>${w.name}</option>`).join('')}
+        <option value="shop" ${adm.song === 'shop' ? 'selected' : ''}>Hauptmenü</option></select>
+      <button data-a="song">Als WAV speichern</button><span class="note" id="admSongNote"></span></div>
+    <p class="note">Rendert den Song einmal komplett (32 Takte), so als würde die Raupe mit dieser Biss-Geschwindigkeit durchgehend fressen. 1 Biss/s = 120 BPM. Die Hauptmenü-Musik hat ein festes Tempo.</p></div>`;
 
   let snap = null;
   try { snap = JSON.parse(localStorage.getItem(SNAP_KEY) || 'null'); } catch (e) {}
@@ -135,6 +139,7 @@ function renderAdmin(){
   on('[data-own]', 'onchange', (i, d) => { if (i.checked) grantAbil(d.own); else dropAbil(d.own); admChanged(); });
   on('[data-abl]', 'onchange', (i, d) => { save.lv['ab_' + d.abl] = Math.max(0, Math.min(5, Math.round(+i.value || 0))); admChanged(); });
   on('[data-abset]', 'onclick', (b, d) => { for (let i = 0; i < 3; i++) save.lv[`ab_${d.abset}_${i}`] = +d.v; admChanged(); });
+  on('[data-sp]', 'onchange', (s) => { adm.sp = s.value; saveAdm(); });
   on('[data-flag]', 'onchange', (i, d) => { adm[d.flag] = i.checked; saveAdm(); });
   on('[data-num]', 'onchange', (i, d) => { adm[d.num] = Math.max(0.1, Math.min(d.num === 'speed' ? 8 : 1000, +i.value || 1)); saveAdm(); S = stats(); });
   on('[data-a]', 'onclick', async (b, d) => {
@@ -154,11 +159,12 @@ function renderAdmin(){
     if (a === 'aball') for (const id in ABIL) grantAbil(id);
     if (a === 'abmax') for (const id in ABIL){ grantAbil(id); for (let i = 0; i < 3; i++) save.lv[`ab_${id}_${i}`] = 5; }
     if (a === 'abnone') for (const id in ABIL) dropAbil(id);
-    if (a === 'song' || a === 'songShop'){
+    if (a === 'song'){
       const r = Math.max(0.8, Math.min(3.5, +$('admSongRate').value || 1)), note = $('admSongNote');
-      adm.songRate = r; saveAdm();
+      const id = $('admSong').value;
+      adm.songRate = r; adm.song = id; saveAdm();
       AU.unlock(); b.disabled = true; note.textContent = 'wird erzeugt …';
-      try { const bpm = await AU.exportSong(a === 'song' ? 'groove' : 'shop', r); note.textContent = `gespeichert (${bpm} BPM)`; }
+      try { const bpm = await AU.exportSong(id, r); note.textContent = `gespeichert (${bpm} BPM)`; }
       catch (e) { note.textContent = 'ging nicht: ' + e.message; }
       b.disabled = false;
       return;

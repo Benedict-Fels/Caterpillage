@@ -25,7 +25,8 @@ function removePixel(i, k, vx, vy, src = 'Biss'){
     crumbs.push({ x: px + 0.5, y: py + 0.5, vx: vx + (Math.random() - 0.5) * 20, vy: vy + (Math.random() - 0.5) * 20,
       life: 0.5 + Math.random() * 0.4, c: `rgb(${col[i*3]},${col[i*3+1]},${col[i*3+2]})` });
   }
-  if (--run.left <= 0){ run.clean = true; endRun(); }
+  if (k === 4) specialEaten(i);
+  if (--run.left <= 0 && !run.over){ run.clean = true; endRun(); }
 }
 function damage(i, dmg, vx = 0, vy = 0, src = 'Biss'){
   const k = type[i];
@@ -76,18 +77,45 @@ function bite(){
   let hit = 0, removed = 0, hardest = 0, hardestCost = -1;
   const src = run.rauschT > 0 ? 'Biss im Fressrausch' : 'Biss';
   run.sogCycle = 0;
-  for (const [ox, oy] of offs){
+  /* Biss mit Kraft-Budget: Jedes erreichbare Pixel im Bisskegel bringt seinen Anteil Bisskraft mit
+     (zum Rand hin schwächer, Kaukraft). Ausgegeben wird die Kraft immer am vordersten noch stehenden
+     Pixel, zuerst ein maulgroßer Brocken vor dem Kopf. Ein schwacher Biss frisst so einen kleineren
+     Kegel ganz weg, statt alles nur anzukratzen. */
+  let budget = 0;
+  const cand = [];
+  for (const [ox, oy, od] of offs){
+    if (od > reach + 0.8) break;
     const px = bx + ox, py = by + oy;
     if (px < 0 || py < 0 || px >= SIM || py >= SIM) continue;
-    const i = py * SIM + px, k = type[i];
-    if (!k) continue;
     const dx = px + 0.5 - h.x, dy = py + 0.5 - h.y, d = Math.hypot(dx, dy);
     if (d > reach) continue;
     if (d > r * 0.6 && (dx * cx + dy * cy) / d < 0.25) continue;
-    if (!lineFree(h.x, h.y, px + 0.5, py + 0.5, i)) continue;
+    const wgt = 1 - S.falloff * d / reach;
+    const i = py * SIM + px;
+    if (type[i]) cand.push([i, d, dx, dy, wgt]);
+  }
+  // Reihenfolge: zuerst ein maulgroßer Brocken direkt vor dem Kopf, damit die Raupe durchpasst
+  const fx = h.x + cx * r * 0.6, fy = h.y + cy * r * 0.6;
+  for (const c of cand){ const q = c[0]; c[5] = Math.hypot(q % SIM + 0.5 - fx, (q / SIM | 0) + 0.5 - fy); }
+  cand.sort((a, b) => a[5] - b[5]);
+  // Jedes erreichbare Pixel bringt seinen Anteil Kraft mit; ausgegeben wird sie immer zuerst am vordersten
+  // noch stehenden Pixel. So wird der Brocken vor dem Maul ganz weggefressen, statt alles anzukratzen.
+  const open = [];
+  for (const c of cand){
+    const [i, d, dx, dy, wgt] = c, k = type[i];
+    if (!k || !lineFree(h.x, h.y, i % SIM + 0.5, (i / SIM | 0) + 0.5, i)) continue;
+    budget += power * wgt;
     hit++;
     if (W.layers[k].cost > hardestCost){ hardestCost = W.layers[k].cost; hardest = k; }
-    if (damage(i, power * (1 - S.falloff * d / reach), dx / d * 30 - cx * 12, dy / d * 30 - cy * 12, src)) removed++;
+    open.push(c);
+    while (budget > 0 && open.length){
+      const [j, dj, ex, ey] = open[0];
+      if (!type[j]){ open.shift(); continue; }
+      const use = Math.min(budget, Math.max(0, hp[j]));
+      budget -= use;
+      if (damage(j, use + 1e-9, ex / (dj || 1) * 30 - cx * 12, ey / (dj || 1) * 30 - cy * 12, src)){ removed++; open.shift(); }
+      else break;
+    }
   }
   if (save.abil.passive === 'gabeldruese'){
     const L = abL('gabeldruese');
@@ -140,7 +168,7 @@ function hairStep(dt){
   if (run.hairT > 0) return;
   run.hairT = 0.35 - 0.04 * L[2];
   run.hairFx = 1;
-  const dmg = effPower() * (0.12 + 0.04 * L[0]), reach = 2.5 + 0.8 * L[1];
+  const dmg = effPower() * (0.12 + 0.04 * L[0]), reach = hairReach(L[1]);
   const segs = segments();
   for (let j = 0; j < segs.length; j++){
     const s = segs[j];
@@ -148,10 +176,15 @@ function hairStep(dt){
   }
 }
 
+/* Ausdauer: Grundverbrauch pro Sekunde (W.drain, läuft auch im Stand) plus Kosten je Biss nach dem
+   härtesten getroffenen Material. Ein Biss ins Leere kostet wenig. Im Fressrausch kostet nichts. */
 function spend(k){
-  if (run.rauschT > 0) return;
   const L = k ? W.layers[k] : null;
-  const c = L ? L.cost * (L.hard ? S.hardMult : 1) : 0.5;
+  loseStamina(L ? L.cost * (L.hard ? S.hardMult : 1) : EMPTY_BITE);
+}
+function drainStep(dt){ loseStamina(W.drain * dt); }
+function loseStamina(c){
+  if (run.rauschT > 0 || run.over) return;
   run.spent += c;
   if (cheat('infStam')) return;
   run.stamina = Math.max(0, run.stamina - c);

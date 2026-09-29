@@ -1,4 +1,6 @@
-# Caterpillage – Planungsstand
+# Chompillar – Planungsstand
+
+(Arbeitstitel bis 29.09.2026: Caterpillage. Umbenannt, weil es ein Handyspiel "Caterpillage" mit ähnlichem Prinzip gibt; siehe "Veröffentlichung".)
 
 Ein Incremental-Spiel, in dem sich eine Raupe durch runde Früchte frisst: erst die harte Schale, dann das weiche Fruchtfleisch, zuletzt der steinharte Kern. Mit den gesammelten Ressourcen kauft man Upgrades, schaltet neue Früchte frei, und am Ende eskaliert das Ganze ins Absurde.
 
@@ -26,9 +28,11 @@ Die Ansicht ist reine Draufsicht (kein Schatten, kein Stiel).
 
 ### Der Run-Loop
 
-- Die Ausdauer ist die Rundenuhr. Jeder Biss kostet Ausdauer, harte Schichten mehr als weiche.
+- Die Ausdauer ist die Rundenuhr. Sie sinkt ständig um einen **Grundverbrauch pro Sekunde** (auch im Stand), und jeder Biss kostet zusätzlich, harte Schichten mehr als weiche (seit Stufe 9).
 - Bei Ausdauer 0 ist der Run vorbei, es gibt **keine Regeneration**. Stattdessen geht es in einen separaten Upgrade-Screen.
 - **Jeder Run beginnt mit einer frischen, ganzen Frucht.**
+
+- **Kein Prestige** (entschieden 29.09.2026). Langzeitziele kommen über Welten, Fundstücke (Setzkasten) und Meilensteine (Fressbuch).
 
 ### Pacing der ersten Frucht
 
@@ -273,15 +277,205 @@ Falls später ein Build-Werkzeug gewünscht ist (z. B. Vite mit ES-Modulen), bra
 - **Admin:** "Alles freischalten" (alle Welten, Fähigkeiten, Upgrades und Fähigkeiten-Stufen auf Max, je 1 Mio. Währung), "Alles auf Anfang" (Doppelklick). Welten einzeln freischalten/sperren, "Hier spielen", Runs zurücksetzen. Alle Upgrades als Liste pro Welt mit Stufe, 0 und Max. Fähigkeiten direkt ausrüsten per Auswahl (gibt sie gleich in den Besitz), Besitz und Stufen einzeln. Offene Fähigkeiten-Wahl verwerfen.
 - **Song speichern:** Im Admin unter "Musik": Run-Song oder Shop-Musik als WAV (32 Takte, Tempo über Bisse/s wählbar, 1 Biss/s = 120 BPM). Eine Aufnahme liegt in `musik/caterpillage-groove-120bpm.wav`.
 
+## Umsetzung Stufe 8: Name, Musik pro Welt, schneller zurück ins Menü
+
+- **Name:** Chompillar (Fenstertitel, Überschrift, Dateinamen beim Musik-Export). Die Speicher-Schlüssel im Browser heißen weiter `caterpillage.*`, damit Spielstände erhalten bleiben. Ordner- und Dateinamen im Projekt sind unverändert.
+- **Eigener Song pro Welt** (alle im Biss-Takt, Kick und Bass kommen weiter vom Biss):
+  - Johannisbeere: der bisherige Groove (C-Dur, Four-on-the-floor, Rechteck-Lead).
+  - Kirsche: Funk in d-Moll mit leichtem Swing, Pizzicato-Lead, E-Piano-Stabs auf den Nachschlägen, Fingerschnipsen, Rimshot, Geister-Sechzehntel im Bass.
+  - Walnuss: G-Mixolydisch, Kalimba-Melodie, Holzblöcke, Kick auf 1 und 3 und Holztrommel auf 2 und 4 (fällt ein Biss darauf, spielt er die Holztrommel), Bass in Quinten, Trommelwirbel vor dem Teilwechsel.
+  - Spätere Welten ohne eigenen Song nutzen den Johannisbeer-Song. Neue Instrumente: kalimba, keys (E-Piano); neue Trommeln: snap, shaker, tom, rim.
+  - Export im Admin mit Auswahl des Songs; Aufnahmen in `musik/chompillar-*.wav`.
+- **Pause → Run beenden:** Ertrag wird gutgeschrieben, ohne Ergebnis-Fenster und ohne Abschluss-Jingle direkt ins Hauptmenü (~0,1 s). Die Hauptmenü-Musik blendet in 0,5 s ein (vorher 1,2 s). "Neu starten" spielt ebenfalls keinen Jingle mehr.
+
+## Umsetzung Stufe 9: Ausdauer mit Grundverbrauch
+
+Rückblick (29.09.2026): Mit Kosten nur pro Biss war die Zahl der Bisse pro Run fest. Tempo-Upgrades machten den Run dadurch nur kürzer, nicht ergiebiger, und Stillstehen kostete nichts. Gleichzeitig stapelten sich Fettreserve und Winterspeck in der Walnuss auf bis zu 685 Ausdauer, sodass die Runs dort auf 1,5 min und mehr wuchsen. Entscheidung Bene: **Grundverbrauch pro Sekunde plus Kosten je Biss nach Härte** ("Aktivität kostet mehr").
+
+- **Grundverbrauch je Welt** (`drain` in `data.js`), läuft auch im Stand: Johannisbeere 0,5/s · Kirsche 0,8/s · Walnuss 2,2/s. Spätere, größere Früchte zehren also stärker.
+- **Bisskosten** (härtestes getroffenes Material, auf 70 % der alten Werte gesenkt): Johannisbeere 1,4 · 0,7 · 2,8 · Kirsche 2,8 · 1,05 · 4,9 · Walnuss 1,4 · 4,2 · 1,4. Ein Biss ins Leere kostet 0,2 (vorher 0,5). Zähigkeit/Hornhaut wirken wie bisher nur auf harte Schichten.
+- **Fressrausch** kostet weiterhin gar nichts, auch keinen Grundverbrauch. Saftsog gibt nur Bisskosten zurück, nicht den Grundverbrauch.
+- **Ausdauer-Knoten:** Fettreserve +10 (vorher +12), Winterspeck +10 (vorher +25). Maximum damit 30 + 100 + 150 + 150 = 430 statt 685.
+- **Holzschale** Härte 180 (vorher 250), damit die Walnuss trotz kürzerer Runs nicht später geknackt wird.
+- Tempo lohnt sich jetzt: Mehr Bisse pro Sekunde verteilen den Grundverbrauch auf mehr Ertrag.
+- Hinweistext beim ersten Run: "Die Ausdauer sinkt mit der Zeit, jeder Biss kostet extra."
+
+**Bot-Simulation** (`werkzeuge/bot-simulation.js`: echter Spielcode in Headless-Chromium; frisst zur Mitte, nach dem Durchbruch zum nächsten Kernpixel; kauft immer das Billigste; Fähigkeiten fest Fressrausch + Saftsog, damit die Läufe vergleichbar sind):
+
+| | vorher | Stufe 9 |
+|---|---|---|
+| Run 1 | 17 s | 18 s |
+| Kirsche frei | nach 15 Runs / 5,5 min | nach 13–15 Runs / 5,2–6,2 min |
+| Walnuss frei | nach 28 Runs / 10,6 min | nach 26 Runs / 10,6–10,9 min |
+| Runs Johannisbeere / Kirsche | 22–23 s / 23–25 s | 23–28 s / 24–26 s |
+| Walnuss geknackt | nach ~12 min Walnuss | nach ~8–9 min Walnuss |
+| Runs Walnuss früh → spät | 39 → 92 s | 28 → 60–70 s |
+
+Erträge pro Run bleiben gleich, pro Minute steigen sie in der Walnuss. Getestete Alternativen: Grundverbrauch 1/s in allen Welten (Walnuss-Runs bis 116 s), Walnuss 1,5–1,6/s (Knacken dauerte 12–16 min), 2,5/s mit Holz 160 (Knacken schon nach ~5 min). Die Simulation streut stark je nach Fähigkeit: Mit Säurespucke geht das Knacken deutlich schneller.
+
+## Umsetzung Stufe 10: Sonderstellen
+
+Jede Frucht bekommt genau eine Art Sonderstelle, zufällig gezogen. Sie liegen als eigene Schicht (Schicht 4) im Raster, ihre Werte leiten sich aus der Wirtsschicht der Welt ab (`spHost`: Fruchtfleisch in Johannisbeere und Kirsche, grüne Hülle in der Walnuss). Neue Datei `js/special.js`, Werte in `SPECIAL` in `data.js`.
+
+| Art | Anzahl | Größe | Werte |
+|---|---|---|---|
+| **Saftblase** | 2–4 | Radius 7,5 % der Frucht (Walnuss ×0,6, weil die Hülle dünn ist) | Härte und Bisskosten wie der Wirt. Beim ersten Anbeißen platzt die ganze Blase ("Plopp!"), der Saft (5-facher Wert der Fläche) fliegt als Tröpfchen zur Raupe und zählt beim Ankommen. Tröpfchen, die am Run-Ende noch unterwegs sind, zählen trotzdem. |
+| **Zuckerkristall** | 2–4 | Radius 6 % | 3-fache Härte und doppelte Bisskosten des Wirts, zählt als harte Schicht (Zähigkeit wirkt, Schub stoppt). 12-facher Ertrag je Pixel. Funkelt. |
+| **Faulstelle** | 1–2 | Fleck vom Rand nach innen, 15 % breit, bis 55 % (Johannisbeere), 50 % (Kirsche), 70 % (Walnuss, reicht in die Holzschale) | 40 % der Wirtshärte, Ertrag wie der Wirt, kleine Löcher in der Außenschicht. Kerne und Stein bleiben hart. |
+
+- Beim Start steht 2,6 s lang unten im Spielfeld "Diese Johannisbeere hat Saftblasen". Seitenleiste mit Legende und Stand ("1 / 3 geplatzt" bzw. % bei Kristall und Faulstelle), ebenso im Ergebnis-Fenster.
+- Klänge: Kristall klackt wie Stein, Blase und Faulstelle schmatzen; neu "Plopp" beim Platzen und ein leises Pling für ankommende Tröpfchen.
+- Admin (Testen): Sonderstelle erzwingen (zufällig / Saftblase / Zuckerkristall / Faulstelle / keine).
+
+**Bot-Simulation:** Wer die Sonderstellen gezielt ansteuert, holt 20–39 % des Run-Ertrags direkt aus ihnen (Johannisbeere: Kristalle ~370, Blasen ~200 Saft pro Run). Freischaltungen verschieben sich kaum (Kirsche nach 13–15 Runs, Walnuss nach 23–27). Nebenbefund: Frei im Fruchtfleisch bzw. in der Hülle herumzufressen bringt deutlich mehr Fruchtwährung als der direkte Weg zum Kern (in der Walnuss ein Vielfaches). Das Ansteuern der Sonderstellen verstärkt das; beim Anspielen beobachten.
+
+## Umsetzung Stufe 11: Formen, Walnuss, Brennhaare, neuer Biss
+
+Rückmeldung Bene zu Stufe 10: Faulstellen eher wellig-rund, Kristalle sternförmig, Blasen an der Frucht orientieren; in der Walnuss Kristalle innen und keine Blasen; Brennhaare mit mehr Reichweite; Biss soll nicht überall anknabbern, sondern bei zu wenig Kraft einen kleineren Kegel ganz wegfressen.
+
+- **Saftblase:** hellere, glasige Stelle in der Fruchtfarbe (Adern bleiben sichtbar), weicher Rand, kleiner Glanzpunkt, Radius 10 %.
+- **Zuckerkristall:** Stern mit 5–6 Zacken, zwei Facetten je Zacke, dunkle Kante, Radius 11 %.
+- **Faulstelle:** wellig-runder Fleck (Radius 20 %), sitzt auf dem Rand (Mitte bei 86–88 % des Radius), dunklerer Saum, Löcher in der Außenschicht. Erfasst nur Außenschicht und Wirt; Kerne, Stein und Holzschale bleiben hart (vorher reichte sie in der Walnuss ins Holz und machte das Knacken zu leicht).
+- **Walnuss:** nur Kristalle und Faulstellen (`spKinds`). Kristalle liegen im Nusskern (`spHosts`) und bringen das 4-Fache an Walnusskernen. Keine Saftblasen, bis ein passender Ersatz entschieden ist.
+- **Brennhaare:** Reichweite 4,5 + 1 je Stufe (vorher 2,5 + 0,8).
+
+**Neuer Biss (Kraft-Budget):** Jedes Pixel im Bisskegel, das der Biss frei erreicht, bringt seinen Anteil Bisskraft mit (zum Rand hin schwächer, Kaukraft wirkt wie bisher). Ausgegeben wird die Kraft immer am vordersten noch stehenden Pixel, zuerst ein maulgroßer Brocken direkt vor dem Kopf. Reicht die Kraft nicht für den ganzen Kegel, wird ein kleinerer Kegel ganz weggefressen, statt alles anzukratzen. Der Gesamtschaden pro Biss ist gleich wie vorher, er geht nur nicht mehr verloren. Die Bisskosten richten sich nach dem härtesten wirklich getroffenen Pixel.
+
+Weil kein Schaden mehr verpufft, kommt die Raupe etwa doppelt so schnell durch harte Schichten (Messung: Kirschhaut bei Bisskraft 3 in 85 statt 177 s, Holzschale bei Bisskraft 80 in 56 statt 127 s). Ausgleich: **Beerenkerne Härte 210** (vorher 70), **Kirschstein 660** (220), **Holzschale 270** (180). Die Schalen bleiben gleich. Zwei Irrwege dabei: Ein Budget aus dem ganzen Kegel (auch hinter der Wand) war ~10-mal zu stark; reines "nächstes Pixel zuerst" bohrte ein Loch, durch das der Kopf nicht passte.
+
+Säurespucke, Seidenfaden, Wucht und Brennhaare wirken weiter pro Pixel; gegen Kerne, Stein und Holz sind sie durch die höhere Härte etwas schwächer geworden. Mit den Admin-Messwerten beobachten.
+
+Bot (Fressrausch + Saftsog): Durchbruch Johannisbeere Run 2–3, Kerne ab Run 4 (vorher 7–8), Kirsche nach 11–12 Runs (vorher 14–15), Walnuss nach ~30 (vorher 25–27), Walnuss geknackt nach 5–9 min (vorher ~8), späte Walnuss-Runs ~55 s.
+
+## Umsetzung Stufe 12: Kandis-Kristalle, Öltropfen
+
+- **Zuckerkristall** jetzt als Kristallbüschel von oben (Vorbild: Kristallbüschel und Kandis vom Stiel, Bilder von Bene): 9–13 längliche Prismen mit Spitze, strahlenförmig aus der Mitte, dazu 3 kurze, klotzige Brocken obenauf. Zwei Längsfacetten je Prisma, Licht von oben links, heller Grat, dunkle Kante, Bernsteinfarben wie Kandis. Radius 15 %. Ertrag 5-fach je Pixel (vorher 12-fach, die Fläche ist jetzt etwa dreimal so groß); in der Walnuss 1,5-fach Walnusskerne.
+- **Saftblasen** unregelmäßig (gestreckt, wellige Kontur), Wert 3,5-fach (vorher 5-fach, größere Fläche).
+- **Walnuss: Öltropfen** statt Saftblase (`spOver` in `data.js`), im Nusskern, goldgelb und unförmig. Platzt wie die Saftblase, das Öl fließt als Tropfen zur Raupe und bringt Walnusskerne (1,5-facher Wert der Fläche, ~65 je Tropfen). Die Walnuss hat damit wieder alle drei Arten.
+
+**Warum weniger Runs bis zur Kirsche (Stufe 11)?** Bot mit und ohne Sonderstellen verglichen: Ohne Sonderstellen 12 / 30–31 Runs (Kirsche / Walnuss), mit Sonderstellen, aber ohne sie anzusteuern, ebenfalls 12 / 30–31. Der Unterschied zu vorher (14–15 Runs) kommt also allein vom neuen Biss: Die Beerenkerne werden jetzt stetig abgeknabbert statt erst nach vielen Bissen auf einmal, und nichts geht mehr verloren, wenn der Run endet. Wer die Sonderstellen gezielt ansteuert, ist noch schneller (Kirsche nach 9 Runs, Walnuss nach 18–21), weil er deutlich mehr Fruchtwährung für Upgrades bekommt; die Sonderstellen machen dann 33–44 % des Ertrags in Johannisbeere und Kirsche aus.
+
+## Plan: Setzkasten und Fressbuch (Sonderstellen umgesetzt in Stufe 10)
+
+Ziel: Im Run gibt es etwas anzusteuern, und es gibt Langzeitziele ohne Prestige. Reihenfolge der Umsetzung: Sonderstellen → Setzkasten → Fressbuch → danach neue Früchte.
+
+### Sonderstellen (Ertrag)
+
+Jede Welt kann alle drei Arten haben (auch die Johannisbeere), aber **nie mehrere Arten gleichzeitig** (entschieden): Eine Frucht hat genau eine Art, zufällig gewählt, dafür 2–4 Stück davon. Beim Start blendet der Run kurz ein, was diese Frucht hat ("Diese Beere hat Zuckerkristalle"). Vorschlag: Jede Frucht hat eine Art (nicht nur manche), damit das Steuern immer ein Ziel hat.
+
+| Art | Wo | Wirkung |
+|---|---|---|
+| **Saftblase** | im Fruchtfleisch | Platzt beim ersten Anbeißen; Tröpfchen fliegen von selbst zur Raupe und zählen als Ertrag (etwa das 30-Fache der Fläche an normalem Fruchtfleisch). |
+| **Zuckerkristall** | im Fruchtfleisch, eher tief | Härter als das Fruchtfleisch (etwa Schalenhärte), glitzert, bringt etwa das 10-Fache je Pixel. |
+| **Faulstelle** | vom Rand nach innen | Braune, weiche Zone, dazu kleine Lücken in der Schale. Eine Abkürzung nach innen, bringt normalen Ertrag. |
+
+Werte später per Simulation, Häufigkeit und Größe mit der Fruchtgröße skalieren.
+
+### Setzkasten (Fundstücke / Relikte)
+
+- Im Menü hängt ein **Holzkasten mit Fächern**, eine Reihe pro Welt. Leere Fächer zeigen ein "?", man sieht also, wie viele es gibt.
+- **4–5 Fundstücke pro Welt.** In der Frucht ist nur eine **funkelnde Stelle** zu sehen, nicht was es ist. Freigelegt wird sie wie normales Material. Erst am Run-Ende wird enthüllt, was es war (eigene kleine Enthüllung im Ergebnis-Fenster), dann wandert es in den Setzkasten.
+- **Häufigkeit (entschieden):** Jede Frucht hat mit **10 % Wahrscheinlichkeit** eine funkelnde Stelle, reines Glück, keine Garantie und kein Mitleidszähler. **Ausnahme: das allererste Fundstück ist gesetzt** und kommt sicher in der Johannisbeere, bevor man die Kirsche freischalten kann (Vorschlag: im 5. Run, zu dem Zeitpunkt ist die Schale meist schon durchbrochen; die Stelle liegt gut erreichbar im Fruchtfleisch). Welches Fundstück in einer Frucht liegt, wird zufällig aus den noch fehlenden der Welt gezogen. Nicht mitgenommene Funde verfallen mit der Frucht. Sind alle Fundstücke einer Welt gefunden, erscheinen dort keine mehr. Bei ~13 Runs pro Welt im ersten Durchgang findet man im Schnitt 1–2, den Rest beim Zurückkehren.
+- **Wirkung:** passiv und **immer aktiv**, keine Plätze zum Auswählen (entschieden). Ertragsboni gelten für **alle Fruchtwährungen** (z. B. "+8 % Saft aller Früchte"), nicht nur für die eigene Welt. Einige Fundstücke ändern das Verhalten, statt nur Zahlen zu erhöhen.
+- **Veredeln:** Jedes Fundstück hat Stufe 1–3, bezahlt mit der Kernwährung seiner Welt. Damit bekommen auch die Walnusskerne eine Verwendung.
+- Jedes Fach zeigt Name, Bonus und einen kurzen echten Fakt (das Thema ist echte Raupen- und Obstbiologie).
+
+Entwurf der Fundstücke (Namen und Boni noch offen):
+
+| Welt | Fundstück | Echt | Bonus (Stufe 1) |
+|---|---|---|---|
+| Johannisbeere | Blütenrest | der vertrocknete Blütenstern an der Beere | +8 % Saft aller Früchte |
+| Johannisbeere | Tautropfen | – | −8 % Grundverbrauch |
+| Johannisbeere | Honigtau | Ausscheidung der Blattläuse auf Johannisbeeren | Sonderstellen bringen +25 % |
+| Johannisbeere | Glasflügler-Schuppe | Johannisbeer-Glasflügler, dessen Raupe sich in die Triebe bohrt | +15 % Schaden an der Außenschicht |
+| Johannisbeere | Rispenstiel | Johannisbeeren wachsen an Rispen | +1 Segment |
+| Kirsche | Kirschmade | Larve der Kirschfruchtfliege, ein "Mitbewohner" | Jeder 5. Biss beißt ein zweites Mal daneben mit |
+| Kirsche | Kirschgummi | Harztropfen an Kirschbäumen | Aktive Fähigkeit wirkt 20 % länger |
+| Kirsche | Vogelpick | Vögel picken reife Kirschen an | Jede Frucht startet mit einem Loch in der Haut |
+| Kirsche | Kirschstiel | – | +25 % Krit-Schaden |
+| Walnuss | Juglon-Fleck | brauner Farbstoff der Walnusshülle | Material rund um den Kopf wird bei jedem Biss 15 % weicher |
+| Walnuss | Eichhörnchen-Zahnspur | – | Die Holzschale hat einen Riss |
+| Walnuss | Nussöl | Walnüsse sind sehr fettreich | −10 % Grundverbrauch |
+| Walnuss | Krähenfeder | Krähen lassen Walnüsse fallen, damit sie platzen | Harte Schichten −10 % Härte |
+
+Später passen z. B. Pflaumenwickler (Pflaume) und Apfelwickler ("der Wurm im Apfel").
+
+### Fressbuch (Meilensteine)
+
+- Eigener Menüpunkt. **Alle Einträge sind von Anfang an sichtbar** (was es gibt und was es bringt), erreichte sind abgehakt.
+- Die Schwellen sind so gesetzt, dass sie in zähe Phasen fallen, nicht in die schnellen. Beispiel "Hartnäckig": 8 Runs in einer Welt ohne Durchbruch → +10 % Schaden an deren Außenschicht. Dazu gesammelte Mengen (Kerne gesamt, Pixel gesamt), Ratzeputz pro Welt, alle Fundstücke einer Welt.
+- Kunststücke für Rückkehrer: "Durchbruch in einem Biss", später "ganze Frucht in einem Biss" (wenn man stark gewachsen zu einer alten Frucht zurückkommt).
+- **Boni klein und dauerhaft**, nie auf Ausdauer (sonst werden die Runs wieder länger): Saft aller Früchte, Krit, Bisskraft in %, Fundchance.
+
+## Plan: weicherer Kontrast im Hauptmenü (noch nicht umgesetzt)
+
+Beobachtung (heller und dunkler Modus): Die härtesten Kontraste sind der fast schwarze (dunkel: fast weiße) Knopf "Nächster Run", die dicken dunklen Äste auf hellem Grund, die satten roten Ringe um jeden kaufbaren Knoten und der harte Schnitt beim Wechsel zwischen Run und Menü.
+
+Mögliche Bausteine:
+
+1. **Hintergrund mit Verlauf:** radial von der Raupe in der Baummitte (heller, leicht warm) nach außen weicher auslaufend, Karte und Seitenleiste gehen weicher in den Hintergrund über (weniger Kante, leichter Schatten statt Linie).
+2. **Äste mit Verlauf:** innen kräftig, nach außen blasser und dünner; gekaufte Äste in einem gedeckten Grün statt fast Schwarz.
+3. **Knoten ruhiger:** kaufbar = sanftes Leuchten statt harter roter Ring; Farben gedeckter.
+4. **Knöpfe:** nur "Kaufen" bleibt der starke Akzent. "Nächster Run" bekommt einen weicheren Farbverlauf in Weltfarbe statt Schwarz/Weiß.
+5. **Stimmung je Welt:** Das Menü tönt sich leicht passend zur gewählten Welt (Johannisbeere rötlich, Kirsche dunkelrot, Walnuss braun-grün), beim Weltwechsel fließend überblendet.
+6. **Übergang Run ↔ Menü:** kurze Überblendung (~0,3 s) statt hartem Schnitt, z. B. die Frucht blendet aus und der Baum zoomt leicht herein.
+
+Offen: welche Bausteine Bene will (reine Farben/Verläufe 1–5, die Animation 6 oder beides).
+
+## Veröffentlichung (Stand der Prüfung: 29.09.2026)
+
+Ziel Bene: für ein paar Euro auf itch.io, evtl. weiteren Seiten und Steam anbieten. Den Namen als Marke eintragen lassen ist nicht geplant, er soll aber frei sein. (Keine Rechtsberatung, vor dem ersten Verkauf ggf. Steuerberater fragen.)
+
+**Plattformen**
+
+| | itch.io | Steam |
+|---|---|---|
+| Kosten | keine | 100 $ je Spiel (zurück ab 1.000 $ Umsatz) |
+| Anteil der Plattform | frei wählbar 0–100 %, Standard 10 %, plus Zahlungsgebühr (0,30 $ + 2,9 %) | 30 % |
+| Umsatzsteuer | "Collected by itch.io": itch führt sie ab | Valve führt sie ab |
+| Format | HTML-Spiel direkt als ZIP hochladen, läuft im Browser | Desktop-Programm nötig: Spiel in Electron, NW.js oder Tauri verpacken |
+| Wartezeiten | keine; Auszahlung ab 5 $, Prüfung ~10–14 Tage | 30 Tage nach Zahlung, Store-Seite mind. 2 Wochen "Demnächst", Prüfung von Seite und Build |
+| Steuerformular | Tax Interview (W-8BEN mit Steuer-ID), sonst 30 % Einbehalt | ebenso, dazu Identität und Bankkonto |
+| KI-Angabe | für Spiele freiwillig (nur Asset-Pakete Pflicht) | Pflicht für Musik und Soundeffekte (vorab erzeugt, "Tier 1"); KI-Code ist ausgenommen |
+
+Weitere Seiten wie Newgrounds, CrazyGames oder Poki sind eher für kostenlose Browserspiele mit Werbeeinnahmen, passen also nicht zum Verkaufen.
+
+**Deutschland**
+
+- Vor dem ersten Verkauf Gewerbe anmelden (Gewerbeamt, ca. 20–60 €), danach Fragebogen zur steuerlichen Erfassung über ELSTER.
+- Kleinunternehmerregelung (§ 19 UStG): bis 25.000 € Umsatz im Vorjahr und 100.000 € im laufenden Jahr keine Umsatzsteuer. Beim Verkauf über itch/Steam kümmern sich ohnehin die Plattformen um die Steuer der Käufer.
+- Gewinn ist einkommensteuerpflichtig (Einnahmen-Überschuss-Rechnung mit der Steuererklärung).
+- Impressum (§ 5 DDG) auf der Shop-Seite bzw. eigenen Webseite, mit ladungsfähiger Anschrift. Anonym geht nicht, ein Impressum-Service mit c/o-Adresse ist möglich.
+- Bei Anstellung: Nebentätigkeit ggf. dem Arbeitgeber melden.
+
+**Technische To-dos vor dem Release**
+
+- Schrift (Bricolage Grotesque, freie Lizenz) lokal einbinden statt von Google Fonts laden: DSGVO und nötig für Steam/offline.
+- Admin-Modus in der Verkaufsversion abschalten (Eintippen von "admin" und `?admin`).
+- Menüpunkt mit Credits, Impressum und kurzer Datenschutz-Info (Spielstand liegt nur lokal, kein Tracking).
+- Für Steam: Electron-/Tauri-Hülle, Spielstand-Speicherort prüfen, Vollbild/Fenster, Store-Grafiken und Trailer.
+
+**Namenskandidaten** (Websuche nach Spielen gleichen Namens am 29.09.2026)
+
+| Name | Ergebnis |
+|---|---|
+| Chompillar | keine Treffer |
+| Nibbleverse | keine Treffer (auf Steam gibt es "Nibble Quest") |
+| Larvageddon | kein Spiel, aber Name eines Erfolgs in Endless Dungeon und eines Items in Wakfu |
+| Kernbeißer | kein Spiel; deutsch, international schwer |
+| Gnawtorious | keine Treffer (auf Steam gibt es "GNAW") |
+| verworfen: Munch to the Core, Core Muncher | zu nah an "To The Core" (Vorbild) und "Munch" (beide auf Steam) |
+| verworfen: Instar | Spiel auf itch.io |
+
 ## Ideen für später
 
-- **Besonderheiten in der Frucht:** Zuckerkristalle oder Saftblasen im Fruchtfleisch als seltene Ertragsquellen (wie Erzadern in *To the Core*), geben dem Steuern ein Ziel.
+- (Besonderheiten in der Frucht und Überreifes Obst sind jetzt Teil des Plans "Sonderstellen, Setzkasten, Fressbuch".)
 - **Überreifes Obst** als seltener Zufalls-Modifikator: Das Fruchtfleisch bringt mehr, und es gibt Öffnungen, durch die man schneller ins Innere kommt. Nicht als Dauerzustand.
-- **Verpuppung als Prestige:** Raupe verpuppt sich, wird zum Schmetterling, die nächste Generation startet mit dauerhaften Boni.
 - **Weitere Welten-Ideen** (über die festgelegten sechs hinaus, noch nicht entschieden): Pfirsich, Litschi (harte Schale), Avocado (großer Kern), Kokosnuss, Wollknäuel (Kleidermotte), Bowlingkugel, Asteroid, Mond, Erde (Kruste, Mantel, Eisenkern), Sonne, Schwarzes Loch.
 
 ## Vorerst verworfen
 
+- **Prestige / Verpuppung:** kein Prestige im Spiel (Entscheidung Bene, 29.09.2026).
 - **Mini-Raupen als Helfer:** reizvoll, brauchen aber eine eigene Logik.
 - Ein zunehmend härteres Fruchtfleisch zum Kern hin.
 
@@ -293,5 +487,5 @@ Falls später ein Build-Werkzeug gewünscht ist (z. B. Vite mit ES-Modulen), bra
 - Wofür Walnusskerne ausgegeben werden (bis zur Pflaume noch ohne Verwendung).
 - Fähigkeiten-Balance weiter beobachten (Brennhaare und Gabeldrüse in der Johannisbeere stark).
 - Mitlaufende Kamera für große Früchte (ab Apfel/Kürbis).
-- Runs werden in der Walnuss lang (1,5–2,5 min). Prüfen, ob das stört.
+- Neue Ausdauer (Stufe 9) von Hand anspielen, vor allem: Fühlt sich der Grundverbrauch im Stand zu streng an? Ist die Walnuss mit 2,2/s zu hektisch?
 - Abklingzeit (30 s) und Stärke der Fähigkeiten mit den Admin-Messwerten nachjustieren.

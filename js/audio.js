@@ -107,6 +107,10 @@ const AU = (() => {
     pluck(m, t, v, d, dest){ const f = mtof(m); tone('square', f, t, 0.12 + Math.min(0.5, d * 0.7), 0.1 * v, dest, { lp: f * 8, lpTo: f * 1.6, a: 0.004, q: 2 }); tone('triangle', f * 2, t, 0.07, 0.06 * v, dest); },
     // Groove-Bass: kurz und knackig, damit er zum Biss passt
     sub(m, t, v, d, dest){ const f = mtof(m); tone('triangle', f, t, 0.2, 0.6 * v, dest, { a: 0.003 }); tone('sawtooth', f, t, 0.13, 0.2 * v, dest, { lp: f * 6, lpTo: f * 1.3 }); },
+    // Kalimba: Daumenklavier, holzig mit kurzem metallischem Anschlag
+    kalimba(m, t, v, d, dest){ const f = mtof(m); tone('sine', f, t, 0.9, 0.45 * v, dest, { a: 0.002 }); tone('sine', f * 5.4, t, 0.05, 0.1 * v, dest, { a: 0.001 }); tone('sine', f * 2.01, t, 0.25, 0.08 * v, dest); },
+    // E-Piano: weicher Glockenton mit Obertonschlag, gut für funkige Akkorde
+    keys(m, t, v, d, dest){ const f = mtof(m); tone('sine', f, t, 0.25 + Math.min(0.6, d), 0.3 * v, dest, { a: 0.004 }); tone('sine', f * 2, t, 0.1, 0.1 * v, dest, { a: 0.002 }); tone('triangle', f * 3.98, t, 0.03, 0.05 * v, dest, { a: 0.001 }); },
   };
   const DRUM = {
     kick(t, v, dest){ tone('sine', 165, t, 0.24, 0.95 * v, dest, { to: 42, glide: 0.09, a: 0.001 }); hiss(t, 0.012, 0.22 * v, 'highpass', 2500, { dest }); },
@@ -114,6 +118,11 @@ const AU = (() => {
     hat(t, v, dest){ hiss(t, 0.028, 0.18 * v, 'highpass', 8000, { dest }); },
     ohat(t, v, dest){ hiss(t, 0.15, 0.15 * v, 'highpass', 7000, { dest, a: 0.004 }); },
     wood(t, v, dest, f = 900){ tone('sine', f, t, 0.06, 0.4 * v, dest, { a: 0.001 }); hiss(t, 0.02, 0.1 * v, 'bandpass', f * 2, { dest, q: 3 }); },
+    snap(t, v, dest){ hiss(t, 0.06, 0.35 * v, 'bandpass', 2300, { dest, q: 1.8 }); },
+    shaker(t, v, dest){ hiss(t, 0.04, 0.2 * v, 'highpass', 6500, { dest, a: 0.006 }); },
+    // Holztrommel: tiefer, gedämpfter Schlag mit Tonhöhe
+    tom(t, v, dest, f = 150){ tone('sine', f, t, 0.22, 0.75 * v, dest, { to: f * 0.55, glide: 0.18, a: 0.002 }); hiss(t, 0.03, 0.12 * v, 'lowpass', 900, { dest }); },
+    rim(t, v, dest){ tone('triangle', 1700, t, 0.025, 0.25 * v, dest, { a: 0.001 }); hiss(t, 0.015, 0.15 * v, 'bandpass', 3500, { dest, q: 4 }); },
   };
 
   /* ---------- Musik ----------
@@ -201,11 +210,11 @@ const AU = (() => {
   function start(id){
     if (cur){ fadeOut(cur); cur = null; }
     if (!id) return;
-    const song = SONGS[id] || SONGS.groove;
+    const song = SONGS[id] || SONGS.johannisbeere;       // spätere Welten ohne eigenen Song: Johannisbeere
     prep(song);
     const out = ac.createGain(), t = ac.currentTime + 0.03;
     out.connect(musicBus);
-    out.gain.setValueAtTime(0.0001, t); out.gain.exponentialRampToValueAtTime(1, t + (song.sync ? 0.15 : 1.2));
+    out.gain.setValueAtTime(0.0001, t); out.gain.exponentialRampToValueAtTime(1, t + (song.sync ? 0.15 : 0.5));
     cur = { id, song, out, next: t + 0.05, pos: 0, k: baseK, sd: 1 / (Math.max(0.5, clk.r || 1) * 4 * baseK), fresh: true };
   }
   function fadeOut(s){
@@ -294,6 +303,13 @@ const AU = (() => {
       tone('sine', 140, t, 0.15, 0.4, null, { to: 60 });
     },
     ready(){ jingle('celesta', [84, 91], 0.07, 0.4); },
+    pop(){                                                    // Saftblase platzt
+      const t = ac.currentTime;
+      tone('sine', 380, t, 0.09, 0.45, null, { to: 1300, glide: 0.07 });
+      hiss(t, 0.12, 0.3, 'bandpass', 2200, { q: 1.5, to: 900 });
+      for (let i = 0; i < 4; i++){ const f = 900 + Math.random() * 900; tone('sine', f, t + 0.06 + Math.random() * 0.2, 0.04, 0.1, null, { to: f * 1.5 }); }
+    },
+    drop(){ const f = 1500 + Math.random() * 500; tone('sine', f, ac.currentTime, 0.04, 0.07, null, { to: f * 1.4 }); },
     buy(a = 0){ const m = 64 + Math.round(a * 12); jingle('marimba', [m, m + 7], 0.06, 0.8); hiss(ac.currentTime, 0.03, 0.08, 'highpass', 5000); },
     maxed(){ jingle('marimba', [72, 76, 79, 84], 0.05, 0.8); },
     nope(){ const t = ac.currentTime; tone('triangle', 196, t, 0.1, 0.35, null, { to: 150 }); tone('triangle', 147, t + 0.09, 0.14, 0.3, null, { to: 120 }); },
@@ -330,7 +346,7 @@ const AU = (() => {
   /* ---------- Export: Song als WAV-Datei ----------
      Spielt den Song einmal komplett in einen Offline-Renderer (schneller als Echtzeit),
      so als würde die Raupe mit r Bissen je Sekunde durchgehend fressen. */
-  async function renderSong(id = 'groove', r = 1, loops = 1){
+  async function renderSong(id = 'johannisbeere', r = 1, loops = 1){
     const song = SONGS[id];
     prep(song);
     const k = kBase(r), sd = song.sync ? 1 / (r * 4 * k) : 60 / song.bpm / 4;
@@ -358,11 +374,11 @@ const AU = (() => {
     for (let i = 0; i < n; i++) for (const c of ch){ const v = Math.max(-1, Math.min(1, c[i])); dv.setInt16(o, v < 0 ? v * 0x8000 : v * 0x7fff, true); o += 2; }
     return new Blob([dv], { type: 'audio/wav' });
   }
-  async function exportSong(id = 'groove', r = 1, loops = 1){
+  async function exportSong(id = 'johannisbeere', r = 1, loops = 1){
     const { buf, bpm } = await renderSong(id, r, loops);
     const a = document.createElement('a');
     a.href = URL.createObjectURL(wav(buf));
-    a.download = `caterpillage-${id}-${bpm}bpm.wav`;
+    a.download = `chompillar-${id}-${bpm}bpm.wav`;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 5000);
     return bpm;
@@ -384,7 +400,7 @@ const AU = (() => {
     runStart(r){ baseK = kBase(r); clk = { r: 0, ph: 0, moving: false, at: -1 }; },
     // Taktgeber aus dem Spiel, jedes Bild: Bisse je Sekunde (0 = steht), Phase (0 = Biss), ob die Raupe frisst
     clock(r, ph = 0, moving = false){ if (ac) clk = { r, ph, moving, at: ac.currentTime }; },
-    kind(w, k){ return (LAYER[w.id] || [])[k] || (w.layers[k].k ? 'stone' : w.layers[k].hard ? 'crunch' : 'squish'); },
+    kind(w, k){ return w.layers[k].snd || (LAYER[w.id] || [])[k] || (w.layers[k].k ? 'stone' : w.layers[k].hard ? 'crunch' : 'squish'); },
     bite,
     sfx(name, a){ if (ok() && FX[name]) FX[name](a); },
     beam, stopBeam,

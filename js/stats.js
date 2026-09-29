@@ -40,7 +40,7 @@ function stats(){
     critMult: 1.5 + 0.1 * kc,
     mouth: 4 + 0.4 * lv('maul') + 0.3 * lv('maul2'),
     falloff: 0.55 - 0.07 * lv('kaukraft'),
-    stamina: Math.round((30 + 5 * lv('ausdauer') + 12 * lv('ausdauer2') + 25 * lv('ausdauer3')) * durst),
+    stamina: Math.round((30 + 5 * lv('ausdauer') + 10 * lv('ausdauer2') + 10 * lv('ausdauer3')) * durst),
     hardMult: 1 - 0.08 * lv('zaeh') - 0.04 * lv('zaeh2'),
     cd: 30 - 3 * lv('aufladung'),                          // Abklingzeit der aktiven Fähigkeit in Sekunden
     yieldW: [
