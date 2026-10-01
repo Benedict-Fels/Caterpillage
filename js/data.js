@@ -72,14 +72,14 @@ const WORLDS = [
   {
     id: 'apfel', spHost: 2, spRot: 0.9, drain: 3.6, name: 'Apfel', fruitCur: 'Apfelsaft', coreCur: 'Apfelkerne', color: '#8DB33A', R: 232, brown: 2,
     layers: {
-      1: { name: 'Schale', hp: 700, cost: 5, f: 1, hard: true, sw: '#B8343A', note: 'dünn, aber zäh', snd: 'crunch' },
+      1: { name: 'Schale', hp: 4000, cost: 5, f: 1, hard: true, sw: '#B8343A', note: 'dünn, aber sehr zäh', snd: 'crunch' },
       2: { name: 'Fruchtfleisch', hp: 70, cost: 2, f: 0.15, juicy: true, sw: '#F1EAC4', note: 'saftig, wird an der Luft braun', snd: 'squish' },
       3: { name: 'Kerngehäuse', hp: 2500, cost: 4, f: 0.1, hard: true, sw: '#D6CC98', note: 'Pergament, härter, bringt weniger', snd: 'leaf' },
       4: { name: 'Kerne', hp: 8000, cost: 9, k: 1, hard: true, sw: '#6A3A1C', note: 'je einer in den fünf Kammern', snd: 'stone' },
     },
     breakLayer: 2, breakText: 'Durchbruch!', unlockCost: 1500,
     hint(r){
-      if (!r.broke) return 'Die Apfelschale ist dünn, aber zäh.';
+      if (!r.broke) return 'Die Apfelschale ist dünn, aber sehr zäh. Mehr Bisskraft oder eine Faulstelle hilft.';
       if (!eaten[4]) return 'Das Kerngehäuse in der Mitte ist zäh. In seinen fünf Kammern liegen die Kerne.';
       return 'Die Apfelkerne sind steinhart. Sie bezahlen den Weg zum Kürbis.';
     },
@@ -92,7 +92,7 @@ const WORLDS = [
       3: { name: 'Fasern', hp: 15, cost: 1, f: 0.02, juicy: true, sw: '#F6C46A', note: 'weich, bringen fast nichts', snd: 'leaf' },
       4: { name: 'Kerne', hp: 20000, cost: 9, k: 0.2, hard: true, sw: '#EFE6CB', note: 'flach und hart, verstreut im Hohlraum', snd: 'nut' },
     },
-    breakLayer: 2, breakText: 'Durchbruch!', unlockCost: 1200,
+    breakLayer: 2, breakText: 'Durchbruch!', unlockCost: 900,
     hint(r){
       if (!r.broke) return 'Die Kürbisschale ist dick und hart. Das wird ein langer Weg.';
       if (!eaten[4]) return 'Festes Fruchtfleisch, dahinter ein Hohlraum mit Fasern und vielen Kernen.';

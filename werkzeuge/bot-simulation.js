@@ -61,7 +61,7 @@ const over = process.argv[4] || '{}';
       const pick = (k, L) => { if (bestPf[k] === undefined){ let bx = L.pf, bp = -1; for (let x = 24; x <= 456; x += 8){ const p = gutSimulate(k, x, L.z, L.g).points; if (p > bp){ bp = p; bx = x; } } bestPf[k] = bx; } return bestPf[k]; };
       const gut = O.noDigest || cp.save.gut.p.length < cp.S.gutCap ? 0 : Math.round(Object.values(cp.digestAll(O.randomPf ? (k, L) => 24 + Math.random() * 432 : pick)).reduce((a, b) => a + b, 0));
       totalT += t;
-      console.log(JSON.stringify({ n, w: L.w, gut, sp: SP.kind, spF: Math.round(spF), t: +t.toFixed(1), f: Math.round(L.f), k: +L.k.toFixed(1), p: layerKeys(WORLDS[L.w]).map(k => Math.round(L.p[k])) }));
+      console.log(JSON.stringify({ n, w: L.w, pow: Math.round(cp.S.power), gut, sp: SP.kind, spF: Math.round(spF), t: +t.toFixed(1), f: Math.round(L.f), k: +L.k.toFixed(1), p: layerKeys(WORLDS[L.w]).map(k => Math.round(L.p[k])) }));
       log.push({ n, w: L.w, t: +t.toFixed(1), brokeT: brokeT && +brokeT.toFixed(1), f: Math.round(L.f), k: +L.k.toFixed(1), p: layerKeys(WORLDS[L.w]).map(k => Math.round(L.p[k])), clean: L.clean, stam: cp.S.stamina, rate: +cp.S.rate.toFixed(2), pow: +cp.S.power.toFixed(1) });
       // einkaufen: immer das Billigste (in Fruchtwährung der eigenen Welt normiert)
       for (let g = 0; g < 200; g++){

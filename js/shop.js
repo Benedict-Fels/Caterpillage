@@ -183,12 +183,13 @@ function renderWorlds(){
 }
 
 function unlockWorld(w){
-  const need = WORLDS[w].unlockCost;
+  const need = WORLDS[w].unlockCost;   // nach dem Freischalten: Wahl einer neuen Fähigkeit (Popup), falls noch eine übrig ist
   if (w !== save.unlocked || cur(w - 1, 'k') < need) return;
   addCur(w - 1, 'k', -need);
   save.unlocked = w + 1;
   save.world = w;
-  save.choice = { from: w - 1, options: drawChoices() };
+  const options = drawChoices();
+  save.choice = options.length ? { from: w - 1, options } : null;
   AU.sfx('unlock');
   persist();
   renderShop();
@@ -211,6 +212,9 @@ function drawChoices(){
 function openChoice(){
   const c = save.choice;
   if (!c) return;
+  // Nichts mehr anzubieten (alle Fähigkeiten schon da, z. B. über den Admin-Modus): kein leeres Popup, das sich nicht schließen lässt
+  c.options = (c.options || []).filter(id => ABIL[id] && !save.abil.own[id]);
+  if (!c.options.length){ save.choice = null; persist(); renderShop(); return; }
   const cd = $('choiceDlg');
   $('choiceTitle').textContent = `${WORLDS[c.from].name} geschafft`;
   $('choiceNote').textContent = `Wähle eine neue Fähigkeit. Die anderen können nach einer späteren Welt wieder angeboten werden. `

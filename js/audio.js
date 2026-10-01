@@ -111,6 +111,20 @@ const AU = (() => {
     kalimba(m, t, v, d, dest){ const f = mtof(m); tone('sine', f, t, 0.9, 0.45 * v, dest, { a: 0.002 }); tone('sine', f * 5.4, t, 0.05, 0.1 * v, dest, { a: 0.001 }); tone('sine', f * 2.01, t, 0.25, 0.08 * v, dest); },
     // E-Piano: weicher Glockenton mit Obertonschlag, gut für funkige Akkorde
     keys(m, t, v, d, dest){ const f = mtof(m); tone('sine', f, t, 0.25 + Math.min(0.6, d), 0.3 * v, dest, { a: 0.004 }); tone('sine', f * 2, t, 0.1, 0.1 * v, dest, { a: 0.002 }); tone('triangle', f * 3.98, t, 0.03, 0.05 * v, dest, { a: 0.001 }); },
+    // Steel Pan (Apfel): Grundton mit Oktave und leicht verstimmter Duodezime, kurzer Anschlag von unten
+    steelpan(m, t, v, d, dest){ const f = mtof(m); tone('sine', f, t, 0.55 + Math.min(0.4, d * 0.5), 0.34 * v, dest, { a: 0.004, to: f, glide: 0.02 });
+      tone('sine', f * 0.985, t, 0.03, 0.08 * v, dest, { to: f, glide: 0.03 }); tone('sine', f * 2, t, 0.3, 0.12 * v, dest); tone('sine', f * 3.02, t, 0.12, 0.05 * v, dest); },
+    // Nylongitarre (Pflaume): gezupft, warm, schnell gedämpfter Oberton
+    nylon(m, t, v, d, dest){ const f = mtof(m); tone('triangle', f, t, 0.5 + Math.min(0.5, d * 0.5), 0.26 * v, dest, { a: 0.002 });
+      tone('sawtooth', f, t, 0.12, 0.07 * v, dest, { lp: f * 5, lpTo: f * 1.2, a: 0.002 }); hiss(t, 0.008, 0.03 * v, 'bandpass', f * 4, { dest, q: 2 }); },
+    // Flöte (Pflaume): weicher Einsatz, zwei leicht verstimmte Sinus, etwas Atem
+    flute(m, t, v, d, dest){ const f = mtof(m), L = 0.15 + Math.min(1.2, d); tone('sine', f, t, L, 0.2 * v, dest, { a: 0.05 }); tone('sine', f * 1.003, t, L, 0.08 * v, dest, { a: 0.07 });
+      tone('sine', f * 2, t, L * 0.6, 0.025 * v, dest, { a: 0.06 }); hiss(t, 0.08, 0.025 * v, 'bandpass', f * 2, { dest, q: 1.5, a: 0.03 }); },
+    // Rhodes (Kürbis, Lo-Fi): runder Glockenton mit langem Ausklang, leicht verstimmt
+    rhodes(m, t, v, d, dest){ const f = mtof(m), L = 0.5 + Math.min(1.6, d); tone('sine', f, t, L, 0.24 * v, dest, { a: 0.006 }); tone('sine', f * 1.004, t, L * 0.8, 0.08 * v, dest, { a: 0.01 });
+      tone('sine', f * 2, t, 0.18, 0.05 * v, dest, { a: 0.003 }); tone('triangle', f * 7, t, 0.02, 0.012 * v, dest, { a: 0.001 }); },
+    // Runder, langer Bass (Kürbis)
+    round(m, t, v, d, dest){ const f = mtof(m); tone('sine', f, t, 0.35 + Math.min(0.6, d * 0.6), 0.62 * v, dest, { a: 0.008 }); tone('triangle', f * 2, t, 0.08, 0.06 * v, dest); },
   };
   const DRUM = {
     kick(t, v, dest){ tone('sine', 165, t, 0.24, 0.95 * v, dest, { to: 42, glide: 0.09, a: 0.001 }); hiss(t, 0.012, 0.22 * v, 'highpass', 2500, { dest }); },
@@ -123,12 +137,21 @@ const AU = (() => {
     // Holztrommel: tiefer, gedämpfter Schlag mit Tonhöhe
     tom(t, v, dest, f = 150){ tone('sine', f, t, 0.22, 0.75 * v, dest, { to: f * 0.55, glide: 0.18, a: 0.002 }); hiss(t, 0.03, 0.12 * v, 'lowpass', 900, { dest }); },
     rim(t, v, dest){ tone('triangle', 1700, t, 0.025, 0.25 * v, dest, { a: 0.001 }); hiss(t, 0.015, 0.15 * v, 'bandpass', 3500, { dest, q: 4 }); },
+    // Lo-Fi-Snare: stumpf, mit Körper
+    snare(t, v, dest){ hiss(t, 0.13, 0.26 * v, 'bandpass', 1700, { dest, q: 0.8 }); tone('triangle', 190, t, 0.07, 0.25 * v, dest, { to: 150, a: 0.001 }); },
+    // Vinyl-Knistern: ein paar winzige Klicks
+    crackle(t, v, dest){ for (let i = 0; i < 3; i++) if (Math.random() < 0.6) hiss(t + Math.random() * 0.05, 0.003, (0.05 + 0.1 * Math.random()) * v, 'highpass', 2500 + Math.random() * 3000, { dest }); },
+    // Wassertropfen (Apfel): Blubb von unten nach oben
+    drip(t, v, dest, f = 700){ tone('sine', f, t, 0.08, 0.3 * v, dest, { to: f * 2.2, glide: 0.06, a: 0.002 }); },
+    // Conga (Apfel): hell und kurz, Tonhöhe als 3. Wert
+    conga(t, v, dest, f = 300){ tone('sine', f, t, 0.14, 0.55 * v, dest, { to: f * 0.85, glide: 0.1, a: 0.001 }); hiss(t, 0.01, 0.1 * v, 'bandpass', f * 4, { dest, q: 2 }); },
   };
 
   /* ---------- Musik ----------
      Die Songs selbst (Noten als Text) stehen in songs.js. */
-  const SCALES = { major: [0, 2, 4, 5, 7, 9, 11], minor: [0, 2, 3, 5, 7, 8, 10], mixo: [0, 2, 4, 5, 7, 9, 10] };
-  const QUAL = { M: [0, 4, 7], m: [0, 3, 7], 7: [0, 4, 7, 10], M7: [0, 4, 7, 11], m7: [0, 3, 7, 10] };
+  const SCALES = { major: [0, 2, 4, 5, 7, 9, 11], minor: [0, 2, 3, 5, 7, 8, 10], mixo: [0, 2, 4, 5, 7, 9, 10], dorian: [0, 2, 3, 5, 7, 9, 10] };
+  const QUAL = { M: [0, 4, 7], m: [0, 3, 7], 7: [0, 4, 7, 10], M7: [0, 4, 7, 11], m7: [0, 3, 7, 10],
+    m9: [0, 3, 7, 10, 14], M9: [0, 4, 7, 11, 14], 9: [0, 4, 7, 10, 14], m7b5: [0, 3, 6, 10] };
   function prep(song){
     if (song.ready) return;
     const sc = SCALES[song.scale];
@@ -213,9 +236,15 @@ const AU = (() => {
     const song = SONGS[id] || SONGS.johannisbeere;       // spätere Welten ohne eigenen Song: Johannisbeere
     prep(song);
     const out = ac.createGain(), t = ac.currentTime + 0.03;
-    out.connect(musicBus);
-    out.gain.setValueAtTime(0.0001, t); out.gain.exponentialRampToValueAtTime(1, t + (song.sync ? 0.15 : 0.5));
+    songOut(song, out);
+    out.gain.setValueAtTime(0.0001, t); out.gain.exponentialRampToValueAtTime(song.gain || 1, t + (song.sync ? 0.15 : 0.5));
     cur = { id, song, out, next: t + 0.05, pos: 0, k: baseK, sd: 1 / (Math.max(0.5, clk.r || 1) * 4 * baseK), fresh: true };
+  }
+  // Ausgang eines Songs; lp = eigener Tiefpass (Kürbis: gedämpft wie Lo-Fi)
+  function songOut(song, out){
+    if (!song.lp){ out.connect(musicBus); return; }
+    const f = ac.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = song.lp; f.Q.value = 0.5;
+    out.connect(f).connect(musicBus);
   }
   function fadeOut(s){
     const t = ac.currentTime;
@@ -253,7 +282,7 @@ const AU = (() => {
   }
 
   /* ---------- Effekte ---------- */
-  const LAYER = { johannisbeere: [0, 'crunch', 'squish', 'stone'], kirsche: [0, 'crunch', 'squish', 'stone'], walnuss: [0, 'leaf', 'wood', 'nut'] };
+  const LAYER = { johannisbeere: [0, 'crunch', 'squish', 'stone'], kirsche: [0, 'crunch', 'squish', 'stone'], walnuss: [0, 'leaf', 'wood', 'nut'] };   // neuere Welten: snd an der Schicht
   function bite(kind, removed, crit){
     if (!ok()) return;
     const beat = groove();
@@ -365,7 +394,8 @@ const AU = (() => {
     try {
       ac = off; build(); inten = 1;
       musicBus.gain.value = 0.5; sfxBus.gain.value = 0;
-      const s = { song, out: musicBus, next: 0.05, pos: 0, k, sd, full: true };
+      const out = ac.createGain(); out.gain.value = song.gain || 1; songOut(song, out);
+      const s = { song, out, next: 0.05, pos: 0, k, sd, full: true };
       for (let i = 0; i < steps; i++) step(s);
     } finally { ({ ac, master, musicBus, musicLp, sfxBus, nbuf, inten } = keep); }
     const buf = await off.startRendering();

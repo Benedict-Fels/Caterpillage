@@ -99,11 +99,12 @@ function update(dt){
   run.moving = far;
   if (far && run.dash <= 0){
     const want = Math.atan2(ty, tx);
-    const diff = ((want - cat.dir + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
+    const diff = Math.atan2(Math.sin(want - cat.dir), Math.cos(want - cat.dir));   // kürzester Weg, egal wie oft die Raupe schon gekreist ist
     const rate = 3.2 * dt;
     cat.dir += Math.max(-rate, Math.min(rate, diff));
   }
 
+  cat.dir = Math.atan2(Math.sin(cat.dir), Math.cos(cat.dir));                      // Richtung bleibt zwischen −180° und 180°
   if (live){
     run.rauschT = Math.max(0, run.rauschT - dt);
     run.moltT = Math.max(0, run.moltT - dt);

@@ -548,8 +548,8 @@ Umgesetzt nach dem Plan oben. Abweichungen und Werte:
 | Welt | R | Grundverbrauch | Schichten | Freischalten |
 |---|---|---|---|---|
 | Pflaume | 193 | 3,0/s | Haut 260 / 4,2 · Fruchtfleisch 28 / 1,6 · Stein 2600 / 7 | 300 Walnusskerne |
-| Apfel | 232 | 3,6/s | Schale 700 / 5 · Fruchtfleisch 70 / 2 · Kerngehäuse 2500 / 4 (Ertrag 0,1 statt 0,15) · Kerne 8000 / 9 | 1500 Pflaumensteine |
-| Kürbis | 486 | 4,5/s | Schale 900 / 6 · Fruchtfleisch 220 / 2,5 · Fasern 15 / 1 · Kerne 20000 / 9 (0,2 Kürbiskerne je Pixel) | 1200 Apfelkerne |
+| Apfel | 232 | 3,6/s | Schale 4000 / 5 (vorher 700, Rückmeldung Bene: viel zu schnell durch) · Fruchtfleisch 70 / 2 · Kerngehäuse 2500 / 4 (Ertrag 0,1 statt 0,15) · Kerne 8000 / 9 | 1500 Pflaumensteine |
+| Kürbis | 486 | 4,5/s | Schale 900 / 6 · Fruchtfleisch 220 / 2,5 · Fasern 15 / 1 · Kerne 20000 / 9 (0,2 Kürbiskerne je Pixel) | 900 Apfelkerne |
 
 - **Upgrade-Ringe 5–7** je Welt: Kiefer (+25 / +70 / +200 Bisskraft), Krit-Chance IV–VI, Krit-Schaden IV–VI, Ausdauer (+15 / +20 / +30), Verdauung der Welt, Takt IV–VI; dazu Backentaschen (Pflaume), Diamantmandibeln und Panzerhaut (Apfel), Riesenschlund und Segment IV (Kürbis). Fähigkeiten-Knoten der neuen Ringe kosten 1500 / 3000 Fruchtwährung als Grundpreis.
 - **Apfel braun:** Freigelegtes Fruchtfleisch (auch schräg benachbart) wird nach 2–3,5 s braun.
@@ -558,7 +558,13 @@ Umgesetzt nach dem Plan oben. Abweichungen und Werte:
 - **Larvenstadium:** Größe der Raupe = Fruchtradius der neuesten Welt / Fruchtradius der gespielten Welt (Kürbis frei: Johannisbeere ×6,2, Kirsche ×4, Walnuss ×2,8). Maul, Schritt, Brennhaare, Schub, Säurespucke und Seidenfaden wachsen mit. Mit allen frühen Upgrades ist die Johannisbeere ab dem Kürbis in 5 Bissen weg. Die Raupe darf dann auch über den Rand des Rasters hinaus.
 - **Kamera:** zeigt bis zu 450 Rasterpixel in der Breite (Kirsche und Walnuss bleiben ganz im Bild), folgt sonst dem Kopf. Im höheren Larvenstadium zoomt sie mit der Wurzel der Raupengröße heraus. Hochgeladen wird nur der sichtbare Ausschnitt des Rasters (der Kürbis hat 1,2 Mio. Pixel).
 - **Bot-Simulation** (Fähigkeiten fest, verdaut bei vollem Magen): Kirsche nach 13 Runs (5 min), Walnuss nach 32 (12,5–13 min), Pflaume nach 55–60 (23–26 min), Apfel nach 81–84 (35–37 min), Kürbis nach 104–105 (49–51 min). Im Kürbis frisst ein Run anfangs nur 1–2 % jeder Schicht; er ist als Landschaft gedacht.
-- Noch offen: eigene Songs für Pflaume, Apfel und Kürbis (bis dahin der Song der Johannisbeere); der Upgrade-Baum wird mit sieben Ringen außen eng, die Beschriftungen überlappen teils.
+- **Nach dem Anspielen (01.10.2026):** Fehler behoben: Nach dem Freischalten einer Welt ging die Fähigkeiten-Wahl auch dann auf, wenn keine Fähigkeit mehr übrig war (z. B. alle über den Admin-Modus vergeben); das leere Popup ließ sich nur mit zweimal Esc schließen. Jetzt erscheint es nur mit mindestens einer Option. Bot mit der harten Apfelschale: Apfel nach 75–81 Runs (34–36 min), Kürbis nach 105–116 Runs (64–69 min); die Apfel-Phase dauert damit etwa 30 min (vorher 13), anfangs kommt man meist nur über Faulstellen durch die Schale. Drehfehler behoben: Die Blickrichtung wuchs beim Kreisen unbegrenzt, ab einer Umdrehung drehte sich die Raupe dann den langen Weg (fast 360°) statt ein Stück zur Seite.
+- **Musik der neuen Welten** (`songs.js`, alle im Biss-Takt wie die anderen):
+  - Pflaume: Bossa nova in D-Dorisch, samtig und spätsommerlich. Nylongitarre, nach dem Durchbruch eine weiche Flöte eine Oktave höher, Bossa-Comping, Clave auf dem Rand, Surdo-artiger Schlag auf 1 und 3.
+  - Apfel: sommerlicher Calypso in F-Dur, „feucht fröhlich“. Steel Pan, Gitarren-Nachschläge, Congas, Shaker, Kick auf jedem Viertel, nach dem Durchbruch blubbernde Tropfen.
+  - Kürbis: herbstlicher Lo-Fi in f-Moll. Rhodes mit Nonakkorden, runder langer Bass, stumpfe Snare, viel Swing, Vinyl-Knistern, Tiefpass bei 2600 Hz über dem ganzen Song.
+  - Neu in `audio.js`: Instrumente steelpan, nylon, flute, rhodes, round; Trommeln snare, crackle, drip, conga; Tonleiter dorian; Akkorde m9, M9, 9, m7b5; je Song `lp` (Tiefpass) und `gain` (Lautstärke, Pflaume 1,45, Kürbis 1,15, damit sie so laut sind wie die anderen). Exporte zum Anhören: `musik/chompillar-pflaume|apfel|kuerbis-120bpm.wav`.
+- Noch offen: Der Upgrade-Baum wird mit sieben Ringen außen eng, die Beschriftungen überlappen teils.
 
 ## Plan: Setzkasten und Fressbuch (Sonderstellen umgesetzt in Stufe 10)
 
