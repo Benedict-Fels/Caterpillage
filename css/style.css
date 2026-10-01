@@ -254,6 +254,9 @@ fieldset label.rng{align-items:center}
 .gutupg{margin-top:16px;border-top:1px solid var(--line);padding-top:12px;display:grid;gap:10px}
 .gutupg h2{margin-bottom:0}
 .gcard{border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.foundlist{display:grid;gap:6px}
+.found{display:grid;gap:2px;font-size:14px}
+.found .note{font-size:12px;line-height:1.35}
 .gcard .ghead{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .gcard .ghead b{font-size:15px}
 .gcard p{margin-top:4px}

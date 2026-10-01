@@ -10,7 +10,7 @@ function removePixel(i, k, vx, vy, src = 'Biss'){
   type[i] = 0; D[i*4+3] = 0; eaten[k]++;
   const L = W.layers[k], m = meter(src);
   m.px++;
-  if (L.f){ const g = L.f * S.yieldW[WI]; run.f += g; run.gF += g; m.f += g; if (k === 4 && SP.kind === 'kristall') run.fx += g; }   // fx: wird zu Kristall-Brocken im Darm
+  if (L.f){ const g = L.f * S.yieldW[WI]; run.f += g; run.gF += g; m.f += g; if (k === SPK && SP.kind === 'kristall') run.fx += g; }   // fx: wird zu Kristall-Brocken im Darm
   if (L.k){ run.k += L.k; run.gK += L.k; m.k += L.k; }
   if (L.juicy && save.abil.passive === 'saftsog'){
     const cap = L.cost * (0.6 + 0.07 * abNode('saftsog', 1));
@@ -25,7 +25,8 @@ function removePixel(i, k, vx, vy, src = 'Biss'){
     crumbs.push({ x: px + 0.5, y: py + 0.5, vx: vx + (Math.random() - 0.5) * 20, vy: vy + (Math.random() - 0.5) * 20,
       life: 0.5 + Math.random() * 0.4, c: `rgb(${col[i*3]},${col[i*3+1]},${col[i*3+2]})` });
   }
-  if (k === 4) specialEaten(i);
+  if (k === SPK) specialEaten(i);
+  if (W.brown) exposeBrown(i);
   if (--run.left <= 0 && !run.over){ run.clean = true; endRun(); }
 }
 function damage(i, dmg, vx = 0, vy = 0, src = 'Biss'){
@@ -61,7 +62,9 @@ function lineFree(hx, hy, tx, ty, target){
   const dx = tx - hx, dy = ty - hy, d = Math.hypot(dx, dy);
   const n = Math.floor(d / 0.5);
   for (let k = 1; k < n; k++){
-    const i = Math.floor(hy + dy * k / n) * SIM + Math.floor(hx + dx * k / n);
+    const px = Math.floor(hx + dx * k / n), py = Math.floor(hy + dy * k / n);
+    if (px < 0 || py < 0 || px >= SIM || py >= SIM) continue;                  // außerhalb des Rasters ist nichts
+    const i = py * SIM + px;
     if (i !== target && type[i]) return false;
   }
   return true;
@@ -180,7 +183,7 @@ function hairStep(dt){
   if (run.hairT > 0) return;
   run.hairT = 0.35 - 0.04 * L[2];
   run.hairFx = 1;
-  const dmg = effPower() * (0.12 + 0.04 * L[0]), reach = hairReach(L[1]);
+  const dmg = effPower() * (0.12 + 0.04 * L[0]), reach = hairReach(L[1]) * catGrow();
   const segs = segments();
   for (let j = 0; j < segs.length; j++){
     const s = segs[j];
@@ -225,7 +228,7 @@ function useActive(){
   meter(ABIL[id].name).uses = (meter(ABIL[id].name).uses || 0) + 1;
   const L = abL(id), h = cat.trail[0];
   if (id === 'fressrausch'){ run.rauschT = 3 + L[0]; pop(h.x, h.y - 10, 'Fressrausch!'); }
-  if (id === 'schub'){ run.dash = 30 + 8 * L[0]; pop(h.x, h.y - 10, 'Schub!'); }
+  if (id === 'schub'){ run.dash = (30 + 8 * L[0]) * catGrow(); pop(h.x, h.y - 10, 'Schub!'); }
   if (id === 'spucke'){ run.proj = { x: h.x, y: h.y, dx: Math.cos(cat.dir), dy: Math.sin(cat.dir), dist: 0 }; }
   if (id === 'seidenfaden'){ run.beamT = 2.5 + 0.5 * L[0]; run.beamTick = 0; AU.beam(run.beamT); }
   AU.sfx({ fressrausch: 'rausch', schub: 'dash', spucke: 'spit' }[id]);
@@ -234,7 +237,7 @@ function useActive(){
 
 function dashStep(dt){
   const L = abL('schub');
-  let move = Math.min(run.dash, 170 * dt);
+  let move = Math.min(run.dash, 170 * catGrow() * dt);
   run.dash -= move;
   const r = headR() * (1 + 0.1 * L[1]);
   const cx = Math.cos(cat.dir), cy = Math.sin(cat.dir);
@@ -258,20 +261,19 @@ function dashStep(dt){
 
 function projStep(dt){
   const p = run.proj;
-  let move = 150 * dt;
+  const g = catGrow();
+  let move = 150 * g * dt;
   while (move > 0){
     p.x += p.dx * 0.5; p.y += p.dy * 0.5; p.dist += 0.5; move -= 0.5;
     const px = Math.floor(p.x), py = Math.floor(p.y);
     const out = px < 0 || py < 0 || px >= SIM || py >= SIM;
-    if (out || p.dist > 160 || type[py * SIM + px]){
-      if (!out) explode(p.x, p.y);
-      run.proj = null; return;
-    }
+    if (p.dist > 160 * g){ run.proj = null; return; }                         // fliegt auch außerhalb des Rasters weiter
+    if (!out && type[py * SIM + px]){ explode(p.x, p.y); run.proj = null; return; }
   }
 }
 function spitDmg(){ return Math.max(40, S.power * admMul('pow') * 10) * (1 + 0.3 * abNode('spucke', 1)); }
 function explode(x, y){
-  const L = abL('spucke'), rr = 9 + 1.5 * L[0], dmg = spitDmg();
+  const L = abL('spucke'), rr = (9 + 1.5 * L[0]) * catGrow(), dmg = spitDmg();
   disc(x, y, rr, (i, dx, dy, d) => damage(i, dmg * (1 - 0.5 * d / rr), dx * 4, dy * 4, 'Säurespucke'));
   if (L[2]) run.pool = { x, y, r: rr * 1.1, t: L[2], tick: 0 };
   AU.sfx('splash'); pop(x, y - 6, 'Zisch!'); dmgPop(x, y + 4, dmg, true);
@@ -300,10 +302,10 @@ function beamStep(dt){
   if (tick) run.beamTick = 0.08;
   for (const side of [0, -1, 1]){
     let hits = 0;
-    for (let s = headR() * 0.9; s < 120; s += 0.5){
+    for (let s = headR() * 0.9, end = 120 * catGrow(); s < end; s += 0.5){
       const x = h.x + cx * s - cy * side, y = h.y + cy * s + cx * side;
       const px = Math.floor(x), py = Math.floor(y);
-      if (px < 0 || py < 0 || px >= SIM || py >= SIM) break;
+      if (px < 0 || py < 0 || px >= SIM || py >= SIM) continue;
       const i = py * SIM + px;
       if (!type[i]) continue;
       if (side === 0 && !end) end = { x, y };
@@ -311,7 +313,7 @@ function beamStep(dt){
       if (++hits >= depth) break;
     }
   }
-  run.beamEnd = end || { x: h.x + cx * 120, y: h.y + cy * 120 };
+  run.beamEnd = end || { x: h.x + cx * 120 * catGrow(), y: h.y + cy * 120 * catGrow() };
   if (tick && end && (run.beamAcc = (run.beamAcc || 0) + 1) % 3 === 0) dmgPop(end.x, end.y, dmg, false);
   if (run.beamT <= 0) run.beamEnd = null;
 }

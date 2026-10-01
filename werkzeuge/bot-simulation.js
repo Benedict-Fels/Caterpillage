@@ -36,9 +36,10 @@ const over = process.argv[4] || '{}';
         // Ziel: vor dem Durchbruch Mitte, danach nächstes Pixel der Kernschicht
         const h = cp.cat.trail[0];
         let tx = CX, ty = CY;
-        if ((run.broke || WI === 2) && (ticks++ % 12 === 0 || cp.run._tx === undefined)){
+        // Walnuss: der Lohn (Nusskern) ist die Durchbruch-Schicht, also gleich darauf zu; sonst erst nach dem Durchbruch
+        const want = layerKeys(W).filter(k => W.layers[k].k).pop();
+        if ((run.broke || W.layers[W.breakLayer].k) && (ticks++ % 12 === 0 || cp.run._tx === undefined)){
           let best = 1e9;
-          const want = 3;
           for (let i = 0; i < N; i += 1){ if (type[i] !== want) continue; const x = i % SIM, y = (i / SIM) | 0, d = (x - h.x) ** 2 + (y - h.y) ** 2; if (d < best){ best = d; tx = x; ty = y; } }
           if (best === 1e9){ tx = CX; ty = CY; }
           cp.run._tx = tx; cp.run._ty = ty;
@@ -47,21 +48,21 @@ const over = process.argv[4] || '{}';
           const it = SP.items.filter(b => b.left > 0 && !b.popped).sort((a, b) => Math.hypot(a.x - h.x, a.y - h.y) - Math.hypot(b.x - h.x, b.y - h.y))[0];
           if (it){ tx = it.x; ty = it.y; }
         }
-        { const dx = tx - h.x, dy = ty - h.y, d = Math.hypot(dx, dy) || 1; cp.cat.target.x = h.x + dx / d * 30; cp.cat.target.y = h.y + dy / d * 30; }
+        { const dx = tx - h.x, dy = ty - h.y, d = Math.hypot(dx, dy) || 1; const g = 30 * catGrow(); cp.cat.target.x = h.x + dx / d * g; cp.cat.target.y = h.y + dy / d * g; }
         if (cp.run.charge >= 1 && save.abil.active) cp.useActive();
         cp.update(0.02); t += 0.02;
         if (brokeT === null && cp.run.broke) brokeT = t;
       }
-      const spF = SP.kind === 'blase' ? (run.m['Saftblase'] ? run.m['Saftblase'].f : 0) : SP.kind ? eaten[4] * W.layers[4].f * S.yieldW[WI] : 0;
+      const spF = SP.kind === 'blase' ? (run.m['Saftblase'] ? run.m['Saftblase'].f : 0) : SP.kind ? eaten[SPK] * W.layers[SPK].f * S.yieldW[WI] : 0;
       const L = cp.save.last;
       // verdauen, sobald der Magen voll ist (gleiche Physik, Pförtner pendelt); gut = Ertrag aus dem Darm
       // Pförtner wie ein ordentlicher Spieler: je Frucht die beste Stelle für die Grundstellung der Zilien
       const bestPf = {};
-      const pick = (k, L) => { if (bestPf[k] === undefined){ let bx = L.pf, bp = -1; for (let x = 24; x <= 456; x += 8){ const p = gutSimulate(k, x, L.z).points; if (p > bp){ bp = p; bx = x; } } bestPf[k] = bx; } return bestPf[k]; };
+      const pick = (k, L) => { if (bestPf[k] === undefined){ let bx = L.pf, bp = -1; for (let x = 24; x <= 456; x += 8){ const p = gutSimulate(k, x, L.z, L.g).points; if (p > bp){ bp = p; bx = x; } } bestPf[k] = bx; } return bestPf[k]; };
       const gut = O.noDigest || cp.save.gut.p.length < cp.S.gutCap ? 0 : Math.round(Object.values(cp.digestAll(O.randomPf ? (k, L) => 24 + Math.random() * 432 : pick)).reduce((a, b) => a + b, 0));
       totalT += t;
-      console.log(JSON.stringify({ n, w: L.w, gut, sp: SP.kind, spF: Math.round(spF), t: +t.toFixed(1), f: Math.round(L.f), k: +L.k.toFixed(1), p: [1,2,3].map(k => Math.round(L.p[k])) }));
-      log.push({ n, w: L.w, t: +t.toFixed(1), brokeT: brokeT && +brokeT.toFixed(1), f: Math.round(L.f), k: +L.k.toFixed(1), p: [1,2,3].map(k => Math.round(L.p[k])), clean: L.clean, stam: cp.S.stamina, rate: +cp.S.rate.toFixed(2), pow: +cp.S.power.toFixed(1) });
+      console.log(JSON.stringify({ n, w: L.w, gut, sp: SP.kind, spF: Math.round(spF), t: +t.toFixed(1), f: Math.round(L.f), k: +L.k.toFixed(1), p: layerKeys(WORLDS[L.w]).map(k => Math.round(L.p[k])) }));
+      log.push({ n, w: L.w, t: +t.toFixed(1), brokeT: brokeT && +brokeT.toFixed(1), f: Math.round(L.f), k: +L.k.toFixed(1), p: layerKeys(WORLDS[L.w]).map(k => Math.round(L.p[k])), clean: L.clean, stam: cp.S.stamina, rate: +cp.S.rate.toFixed(2), pow: +cp.S.power.toFixed(1) });
       // einkaufen: immer das Billigste (in Fruchtwährung der eigenen Welt normiert)
       for (let g = 0; g < 200; g++){
         const opts = cp.UPG.filter(u => cp.canBuy(u));

@@ -16,7 +16,7 @@ const WORLDS = [
     layers: {
       1: { name: 'Schale', hp: 3.5, cost: 1.4, f: 1, hard: true, sw: '#7E0818', note: 'zäh, kostet doppelt Ausdauer' },
       2: { name: 'Fruchtfleisch', hp: 1.4, cost: 0.7, f: 0.15, juicy: true, sw: '#E03448', note: 'weich und saftig' },
-      3: { name: 'Kerne', hp: 210, cost: 2.8, k: 1, hard: true, sw: '#EBDDBA', note: 'steinhart' },
+      3: { name: 'Kerne', hp: 90, cost: 2.8, k: 1, hard: true, sw: '#EBDDBA', note: 'steinhart' },
     },
     breakLayer: 2, breakText: 'Durchbruch!', unlockCost: 0,
     hint(r){
@@ -30,7 +30,7 @@ const WORLDS = [
     layers: {
       1: { name: 'Haut', hp: 30, cost: 2.8, f: 1, hard: true, sw: '#4E0514', note: 'fest und glänzend' },
       2: { name: 'Fruchtfleisch', hp: 6, cost: 1.05, f: 0.15, juicy: true, sw: '#A8142E', note: 'dunkel und saftig' },
-      3: { name: 'Stein', hp: 660, cost: 4.9, k: 1, hard: true, sw: '#D9C9A3', note: 'ein großer, steinharter Kern' },
+      3: { name: 'Stein', hp: 500, cost: 4.9, k: 1, hard: true, sw: '#D9C9A3', note: 'ein großer, steinharter Kern' },
     },
     breakLayer: 2, breakText: 'Durchbruch!', unlockCost: 40,
     hint(r){
@@ -55,6 +55,50 @@ const WORLDS = [
       return 'Geknackt! Der Nusskern ist weich. Die Trennwände sind wieder Holz.';
     },
   },
+  {
+    id: 'pflaume', spHost: 2, spRot: 0.88, drain: 3.0, name: 'Pflaume', fruitCur: 'Pflaumenmus', coreCur: 'Pflaumensteine', color: '#4B2E6B', R: 193,
+    layers: {
+      1: { name: 'Haut', hp: 260, cost: 4.2, f: 1, hard: true, sw: '#3E1E5A', note: 'fest, mit Wachsreif; die Naht ist weich', snd: 'crunch' },
+      2: { name: 'Fruchtfleisch', hp: 28, cost: 1.6, f: 0.15, juicy: true, sw: '#E8B640', note: 'goldgelb und saftig', snd: 'squish' },
+      3: { name: 'Stein', hp: 2600, cost: 7, k: 1, hard: true, sw: '#B4845A', note: 'flach, liegt lose in seinem Hohlraum', snd: 'stone' },
+    },
+    breakLayer: 2, breakText: 'Durchbruch!', unlockCost: 300,
+    hint(r){
+      if (!r.broke) return 'Die Pflaumenhaut ist fest. Such die Naht: Dort ist sie weich.';
+      if (!eaten[3]) return 'Goldgelbes Fruchtfleisch. Der Stein liegt lose in der Mitte, von allen Seiten erreichbar.';
+      return 'Der Pflaumenstein ist steinhart. Er bezahlt den Weg zum Apfel.';
+    },
+  },
+  {
+    id: 'apfel', spHost: 2, spRot: 0.9, drain: 3.6, name: 'Apfel', fruitCur: 'Apfelsaft', coreCur: 'Apfelkerne', color: '#8DB33A', R: 232, brown: 2,
+    layers: {
+      1: { name: 'Schale', hp: 700, cost: 5, f: 1, hard: true, sw: '#B8343A', note: 'dünn, aber zäh', snd: 'crunch' },
+      2: { name: 'Fruchtfleisch', hp: 70, cost: 2, f: 0.15, juicy: true, sw: '#F1EAC4', note: 'saftig, wird an der Luft braun', snd: 'squish' },
+      3: { name: 'Kerngehäuse', hp: 2500, cost: 4, f: 0.1, hard: true, sw: '#D6CC98', note: 'Pergament, härter, bringt weniger', snd: 'leaf' },
+      4: { name: 'Kerne', hp: 8000, cost: 9, k: 1, hard: true, sw: '#6A3A1C', note: 'je einer in den fünf Kammern', snd: 'stone' },
+    },
+    breakLayer: 2, breakText: 'Durchbruch!', unlockCost: 1500,
+    hint(r){
+      if (!r.broke) return 'Die Apfelschale ist dünn, aber zäh.';
+      if (!eaten[4]) return 'Das Kerngehäuse in der Mitte ist zäh. In seinen fünf Kammern liegen die Kerne.';
+      return 'Die Apfelkerne sind steinhart. Sie bezahlen den Weg zum Kürbis.';
+    },
+  },
+  {
+    id: 'kuerbis', spHost: 2, spRot: 0.88, drain: 4.5, name: 'Kürbis', fruitCur: 'Kürbismus', coreCur: 'Kürbiskerne', color: '#E07A1F', R: 486,
+    layers: {
+      1: { name: 'Schale', hp: 900, cost: 6, f: 1, hard: true, sw: '#C2641A', note: 'dick und hart, mit Rippen', snd: 'wood' },
+      2: { name: 'Fruchtfleisch', hp: 220, cost: 2.5, f: 0.15, juicy: true, sw: '#F29A3A', note: 'fest und orange', snd: 'crunch' },
+      3: { name: 'Fasern', hp: 15, cost: 1, f: 0.02, juicy: true, sw: '#F6C46A', note: 'weich, bringen fast nichts', snd: 'leaf' },
+      4: { name: 'Kerne', hp: 20000, cost: 9, k: 0.2, hard: true, sw: '#EFE6CB', note: 'flach und hart, verstreut im Hohlraum', snd: 'nut' },
+    },
+    breakLayer: 2, breakText: 'Durchbruch!', unlockCost: 1200,
+    hint(r){
+      if (!r.broke) return 'Die Kürbisschale ist dick und hart. Das wird ein langer Weg.';
+      if (!eaten[4]) return 'Festes Fruchtfleisch, dahinter ein Hohlraum mit Fasern und vielen Kernen.';
+      return 'Kürbiskerne überall. Jeder ist steinhart.';
+    },
+  },
 ];
 const EMPTY_BITE = 0.2;                                  // Ausdauer für einen Biss, der nichts trifft
 /* =====================================================================
@@ -74,9 +118,7 @@ const SPECIAL = {
   faul: { name: 'Faulstelle', plural: 'Faulstellen', n: [1, 2], r: 0.2,
     layer: h => ({ name: 'Faulstelle', hp: h.hp * 0.4, cost: h.cost, f: h.f, juicy: h.juicy, sw: '#7A5230', note: 'weich, ein Weg nach innen', snd: 'squish' }) },
 };
-const FUTURE = [
-  { name: 'Pflaume', color: '#4B2E6B' }, { name: 'Apfel', color: '#8DB33A' }, { name: 'Kürbis', color: '#E07A1F' },
-];
+const FUTURE = [];                                         // weitere Welten (noch nicht gebaut)
 
 /* ---------- Icons der Währungen ---------- */
 const ICON = [
@@ -86,6 +128,12 @@ const ICON = [
     k: '<ellipse cx="12" cy="12" rx="7.6" ry="8.8" fill="#D9C9A3" stroke="#8C7A52" stroke-width="1.3"/><path d="M12 3.6v16.8" stroke="#8C7A52" stroke-width="1.3"/>' },
   { f: '<path d="M4 8.5 16.5 4l3.5 9.5L7.5 19Z" fill="#9A6B3A" stroke="#6A4520" stroke-width="1.2" stroke-linejoin="round"/><path d="M7 10.5l8-3M8.4 14.2l8.2-3" stroke="#6A4520" stroke-width="1" opacity=".7"/>',
     k: '<path d="M12 3.5c-4.5 0-7.5 3.5-7.5 8.5s3 8.5 7.5 8.5 7.5-3.5 7.5-8.5-3-8.5-7.5-8.5Z" fill="#DDBF86" stroke="#9A7A44" stroke-width="1.2"/><path d="M12 3.8v16.4M7.5 8c1.8 1 1.8 3 0 4s-1.8 3 0 4M16.5 8c-1.8 1-1.8 3 0 4s1.8 3 0 4" stroke="#9A7A44" stroke-width="1.1" fill="none"/>' },
+  { f: '<path d="M6 9h12l-1.2 10.2a2 2 0 0 1-2 1.8H9.2a2 2 0 0 1-2-1.8Z" fill="#5A2E7A"/><rect x="5" y="5.5" width="14" height="3.5" rx="1" fill="#C9A86A"/><ellipse cx="10" cy="14" rx="1.4" ry="2.6" fill="#fff" opacity=".35"/>',
+    k: '<path d="M12 3c4 2.5 5.5 6 5.5 9s-1.5 6.5-5.5 9c-4-2.5-5.5-6-5.5-9S8 5.5 12 3Z" fill="#B4845A" stroke="#7A5434" stroke-width="1.2"/><path d="M12 3.5v17" stroke="#7A5434" stroke-width="1.3"/>' },
+  { f: '<path d="M12 2.5C9 7 5.5 10.6 5.5 14.6a6.5 6.5 0 0 0 13 0C18.5 10.6 15 7 12 2.5Z" fill="#E2B13A"/><ellipse cx="9.6" cy="14" rx="1.6" ry="2.6" fill="#fff" opacity=".45"/>',
+    k: '<path d="M12 3c3 3.2 4.6 7 4.6 10.4a4.6 4.6 0 0 1-9.2 0C7.4 10 9 6.2 12 3Z" fill="#6A3A1C" stroke="#3E200E" stroke-width="1.1"/><ellipse cx="10.6" cy="12.5" rx="1" ry="2.2" fill="#fff" opacity=".35"/>' },
+  { f: '<path d="M4.5 9.5h15v8a3 3 0 0 1-3 3h-9a3 3 0 0 1-3-3Z" fill="#E07A1F"/><path d="M9 9.5v11M15 9.5v11" stroke="#B35A12" stroke-width="1.1"/><path d="M12 9.5V5.5" stroke="#5E8A34" stroke-width="2" stroke-linecap="round"/>',
+    k: '<ellipse cx="12" cy="12" rx="5.6" ry="8.6" transform="rotate(20 12 12)" fill="#F1E7C9" stroke="#B8A57A" stroke-width="1.3"/><ellipse cx="12" cy="12" rx="3.6" ry="6.4" transform="rotate(20 12 12)" fill="none" stroke="#D7C9A0" stroke-width="1"/>' },
 ];
 const iconImgs = {};
 function iconImg(w, t){                                      // Icon als Bild für das Canvas
@@ -161,11 +209,11 @@ const abL = id => [0, 1, 2].map(i => abNode(id, i));
 
 /* =====================================================================
    Upgrade-Baum. Sechs Äste, Ringe nach Welten:
-   Ring 1–2 Johannisbeere, Ring 3 Kirsche, Ring 4 Walnuss.
+   Ring 1–2 Johannisbeere, Ring 3 Kirsche, Ring 4 Walnuss, Ring 5 Pflaume, Ring 6 Apfel, Ring 7 Kürbis.
    w = Welt, deren Fruchtwährung bezahlt; kc/kw = zusätzliche Kernwährung.
    ===================================================================== */
-const RINGS = [0, 12.5, 22, 32, 42];
-const BANDS = [0, 27, 37];
+const RINGS = [0, 12.5, 22, 32, 42, 52, 62, 72];
+const BANDS = [0, 27, 37, 47, 57, 67];
 const BR = { Kiefer: -90, Maul: -30, Ausdauer: 30, Verdauung: 90, Tempo: 150, 'Fähigkeiten': 210 };
 /* show(s) liefert den echten Gesamtwert aus stats(); im Shop steht "jetzt → nach dem Kauf".
    Alle Knoten wirken linear: jede Stufe bringt gleich viel, auch die erste. */
@@ -252,6 +300,58 @@ const UPG = [
     desc: 'Schnellerer Biss-Takt: +0,05 Bisse/s je Stufe.', show: SH.rate },
   { id: 'segment3', w: 2, ring: 4, br: 'Tempo', off: 10, parent: 'segment2', need: 1, name: 'Segment III', max: 3, cost: 400, grow: 2.2,
     desc: 'Noch ein Segment.', show: SH.segs },
+  // --- Pflaume ---
+  { id: 'kiefer4', w: 3, ring: 5, br: 'Kiefer', off: 0, parent: 'kiefer3', need: 3, name: 'Steinbeißer', max: 15, cost: 80, grow: 1.6,
+    desc: 'Kiefer für Pflaumensteine: +25 Bisskraft je Stufe.', show: SH.power },
+  { id: 'krit4', w: 3, ring: 5, br: 'Kiefer', off: -20, parent: 'krit3', need: 1, name: 'Krit-Chance IV', max: 5, cost: 300, grow: 1.9,
+    desc: 'Je Stufe +1 % Chance auf einen kritischen Biss.', show: SH.crit },
+  { id: 'kritd4', w: 3, ring: 5, br: 'Kiefer', off: 38, parent: 'kritd3', need: 1, name: 'Krit-Schaden IV', max: 5, cost: 300, grow: 1.9,
+    desc: 'Je Stufe +5 % Krit-Schaden.', show: SH.critDmg },
+  { id: 'maul3', w: 3, ring: 5, br: 'Maul', off: 10, parent: 'maul2', need: 2, name: 'Backentaschen', max: 5, cost: 250, grow: 1.9,
+    desc: 'Noch mehr Maul: +0,3 je Stufe.', show: SH.mouth },
+  { id: 'ausdauer4', w: 3, ring: 5, br: 'Ausdauer', off: -10, parent: 'ausdauer3', need: 3, name: 'Vorratsfett', max: 15, cost: 60, grow: 1.55,
+    desc: 'Mehr Ausdauer: +15 je Stufe.', show: SH.stamina },
+  { id: 'verdauung4', w: 3, ring: 5, br: 'Verdauung', off: -10, parent: 'verdauung3', need: 2, name: 'Pflaumenmagen', max: 15, cost: 100, grow: 1.6,
+    desc: 'Mehr Pflaumenmus: +15 % je Stufe. Wirkt nur in der Pflaume.', show: SH.yieldOf(3) },
+  { id: 'tempo4', w: 3, ring: 5, br: 'Tempo', off: -10, parent: 'tempo3', need: 1, name: 'Takt IV', max: 7, cost: 100, grow: 1.7,
+    desc: 'Schnellerer Biss-Takt: +0,05 Bisse/s je Stufe.', show: SH.rate },
+
+  // --- Apfel ---
+  { id: 'kiefer5', w: 4, ring: 6, br: 'Kiefer', off: 0, parent: 'kiefer4', need: 3, name: 'Apfelkiefer', max: 15, cost: 120, grow: 1.6,
+    desc: 'Kiefer, die durch Kerngehäuse beißen: +70 Bisskraft je Stufe.', show: SH.power },
+  { id: 'krit5', w: 4, ring: 6, br: 'Kiefer', off: -20, parent: 'krit4', need: 1, name: 'Krit-Chance V', max: 5, cost: 450, grow: 1.9,
+    desc: 'Je Stufe +1 % Chance auf einen kritischen Biss.', show: SH.crit },
+  { id: 'kritd5', w: 4, ring: 6, br: 'Kiefer', off: 38, parent: 'kritd4', need: 1, name: 'Krit-Schaden V', max: 5, cost: 450, grow: 1.9,
+    desc: 'Je Stufe +5 % Krit-Schaden.', show: SH.critDmg },
+  { id: 'mandibeln3', w: 4, ring: 6, br: 'Kiefer', off: 20, parent: 'mandibeln2', need: 1, name: 'Diamantmandibeln', max: 8, cost: 900, grow: 1.8,
+    desc: 'Je Stufe +15 % Bisskraft.', show: SH.power },
+  { id: 'ausdauer5', w: 4, ring: 6, br: 'Ausdauer', off: -10, parent: 'ausdauer4', need: 3, name: 'Fettkörper', max: 15, cost: 90, grow: 1.55,
+    desc: 'Mehr Ausdauer: +20 je Stufe.', show: SH.stamina },
+  { id: 'zaeh3', w: 4, ring: 6, br: 'Ausdauer', off: 10, parent: 'zaeh2', need: 1, name: 'Panzerhaut', max: 5, cost: 450, grow: 1.9,
+    desc: 'Harte Schichten kosten noch weniger Ausdauer: −3 % je Stufe.', show: SH.hard },
+  { id: 'verdauung5', w: 4, ring: 6, br: 'Verdauung', off: -10, parent: 'verdauung4', need: 2, name: 'Apfelmagen', max: 15, cost: 150, grow: 1.6,
+    desc: 'Mehr Apfelsaft: +15 % je Stufe. Wirkt nur im Apfel.', show: SH.yieldOf(4) },
+  { id: 'tempo5', w: 4, ring: 6, br: 'Tempo', off: -10, parent: 'tempo4', need: 1, name: 'Takt V', max: 7, cost: 150, grow: 1.7,
+    desc: 'Schnellerer Biss-Takt: +0,05 Bisse/s je Stufe.', show: SH.rate },
+
+  // --- Kürbis ---
+  { id: 'kiefer6', w: 5, ring: 7, br: 'Kiefer', off: 0, parent: 'kiefer5', need: 3, name: 'Kürbiskiefer', max: 15, cost: 250, grow: 1.6,
+    desc: 'Kiefer für Kürbisschale: +200 Bisskraft je Stufe.', show: SH.power },
+  { id: 'krit6', w: 5, ring: 7, br: 'Kiefer', off: -20, parent: 'krit5', need: 1, name: 'Krit-Chance VI', max: 5, cost: 900, grow: 1.9,
+    desc: 'Je Stufe +1 % Chance auf einen kritischen Biss.', show: SH.crit },
+  { id: 'kritd6', w: 5, ring: 7, br: 'Kiefer', off: 38, parent: 'kritd5', need: 1, name: 'Krit-Schaden VI', max: 5, cost: 900, grow: 1.9,
+    desc: 'Je Stufe +5 % Krit-Schaden.', show: SH.critDmg },
+  { id: 'maul4', w: 5, ring: 7, br: 'Maul', off: 10, parent: 'maul3', need: 2, name: 'Riesenschlund', max: 5, cost: 700, grow: 1.9,
+    desc: 'Noch mehr Maul: +0,4 je Stufe.', show: SH.mouth },
+  { id: 'ausdauer6', w: 5, ring: 7, br: 'Ausdauer', off: -10, parent: 'ausdauer5', need: 3, name: 'Winterruhe', max: 15, cost: 180, grow: 1.55,
+    desc: 'Mehr Ausdauer: +30 je Stufe.', show: SH.stamina },
+  { id: 'verdauung6', w: 5, ring: 7, br: 'Verdauung', off: -10, parent: 'verdauung5', need: 2, name: 'Kürbismagen', max: 15, cost: 300, grow: 1.6,
+    desc: 'Mehr Kürbismus: +15 % je Stufe. Wirkt nur im Kürbis.', show: SH.yieldOf(5) },
+  { id: 'tempo6', w: 5, ring: 7, br: 'Tempo', off: -10, parent: 'tempo5', need: 1, name: 'Takt VI', max: 7, cost: 300, grow: 1.7,
+    desc: 'Schnellerer Biss-Takt: +0,05 Bisse/s je Stufe.', show: SH.rate },
+  { id: 'segment4', w: 5, ring: 7, br: 'Tempo', off: 10, parent: 'segment3', need: 1, name: 'Segment IV', max: 3, cost: 900, grow: 2.2,
+    desc: 'Noch ein Segment.', show: SH.segs },
+
   // --- Darm (gut: stehen nicht im Baum, sondern im Darm-Screen; wirken für alle Früchte) ---
   { id: 'zilien', w: 0, gut: true, name: 'Mehr Zilien', max: 2, cost: 250, grow: 3,
     desc: 'Eine Zilie mehr im Darm. Sie taucht an einer freien Stelle auf und lässt sich wie die anderen verschieben.',
@@ -265,6 +365,9 @@ const UPG = [
   { id: 'gedaechtnis', w: 1, gut: true, name: 'Gedächtnis', max: 1, cost: 600, grow: 1,
     desc: 'Der Darm merkt sich eine eigene Stellung (Pförtner und Zilien) für jede Frucht. Kommt ein Brocken einer anderen Frucht an die Reihe, gleiten Pförtner und Zilien von selbst in dessen Stellung.',
     show: s => s.gutMem ? 'eine Stellung je Frucht' : 'eine Stellung für alles' },
+  { id: 'galle', w: 2, gut: true, name: 'Gallen-Zilie', max: 1, cost: 900, grow: 1,
+    desc: 'Eine grüne Zilie, die du wie die anderen stellst. Fett-Brocken (Walnussöl, später Kürbis), die sie berühren, werden emulgiert: Sie haften nicht mehr und springen besser ab. Echt: Gallensäuren zerteilen Fett in feine Tröpfchen.',
+    show: s => s.gutBile ? 'eingebaut' : 'keine' },
 ];
 // Ausbau-Knoten jeder Fähigkeit. Sie erscheinen im Ast "Fähigkeiten" im Ring der Welt nach der Wahl
 // und kosten deren Fruchtwährung plus Kernwährung der geschafften Welt.

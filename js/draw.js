@@ -4,6 +4,22 @@
    ===================================================================== */
 const cv = $('cv'), ctx = cv.getContext('2d');
 let stageColor = '#D5E3C1', accent = '#B3122E';
+/* Kamera: zeigt V Rasterpixel in der Breite, ab (cam.x, cam.y). Passt die Frucht ins Bild (bis VMAX), steht sie
+   wie früher; größere Früchte folgen dem Kopf. In größerem Larvenstadium zoomt die Kamera etwas heraus. */
+const VMAX = 450;
+const cam = { x: 0, y: 0, V: 240, init: false };
+const ptr = { on: false, u: 0, v: 0 };                     // letzte Zeigerposition auf dem Canvas (0–1)
+function camUpdate(){
+  const V = Math.min(SIM, VMAX) * Math.sqrt(catGrow());
+  cam.V = V; SC = 720 / V;
+  const h = cat.trail[0], k = cam.init ? 0.1 : 1;
+  cam.init = true;
+  for (const ax of ['x', 'y']){
+    const want = V >= SIM ? (SIM - V) / 2 : Math.max(0, Math.min(SIM - V, h[ax] - V / 2));
+    cam[ax] += (want - cam[ax]) * k;
+  }
+  if (ptr.on && ctrl.mode === 'mouse' && !paused){ cat.target.x = cam.x + ptr.u * V; cat.target.y = cam.y + ptr.v * V; }
+}
 function readTheme(){
   const cs = getComputedStyle(document.documentElement);
   stageColor = cs.getPropertyValue('--stage').trim() || stageColor;
@@ -15,7 +31,7 @@ function drawCat(){
   const tired = run.over ? 0.72 : 1;
   const rausch = run.rauschT > 0;
   const hairs = save.abil.passive === 'brennhaare';
-  const hairLen = hairs ? hairReach(abNode('brennhaare', 1)) : 0;
+  const hairLen = hairs ? hairReach(abNode('brennhaare', 1)) * catGrow() : 0;
   for (let i = n - 1; i >= 0; i--){
     const s = segs[i], prev = segs[Math.max(0, i - 1)];
     const a = i ? Math.atan2(prev.y - s.y, prev.x - s.x) : cat.dir;
@@ -94,8 +110,13 @@ function draw(){
   const sk = shake * ([0, 0.35, 1][ui.shake] ?? 0.35);          // Wackeln je nach Einstellung
   const sx = sk ? (Math.random() - 0.5) * sk * 2 : 0;
   const sy = sk ? (Math.random() - 0.5) * sk * 2 : 0;
-  ctx.setTransform(1, 0, 0, 1, sx, sy);
-  fctx.putImageData(img, 0, 0);
+  camUpdate();
+  const ox = cam.x * SC, oy = cam.y * SC;
+  ctx.setTransform(1, 0, 0, 1, sx - ox, sy - oy);
+  // nur den sichtbaren Ausschnitt des Rasters neu hochladen (der Kürbis hat über eine Million Pixel)
+  const x0 = Math.max(0, Math.floor(cam.x)), y0 = Math.max(0, Math.floor(cam.y));
+  const x1 = Math.min(SIM, Math.ceil(cam.x + cam.V) + 1), y1 = Math.min(SIM, Math.ceil(cam.y + cam.V) + 1);
+  if (x1 > x0 && y1 > y0) fctx.putImageData(img, 0, 0, x0, y0, x1 - x0, y1 - y0);
   ctx.imageSmoothingEnabled = false;
   ctx.drawImage(fruitCv, 0, 0, SIM * SC, SIM * SC);
   if (run.pool){
@@ -122,6 +143,7 @@ function draw(){
     ctx.fillRect(c.x * SC - cs / 2, c.y * SC - cs / 2, cs, cs);
   }
   ctx.globalAlpha = 1;
+  ctx.setTransform(1, 0, 0, 1, sx, sy);                    // Zahlen und Schrift in Bildschirm-Koordinaten
   ctx.textAlign = 'center';
   ctx.lineJoin = 'round';
   // Auf kleinen Bildschirmen wird das Canvas verkleinert: Zahlen dann etwas größer zeichnen
@@ -131,13 +153,13 @@ function draw(){
     if (p.kind === 'label'){
       ctx.fillStyle = accent;
       ctx.font = `800 30px 'Bricolage Grotesque', system-ui, sans-serif`;
-      ctx.fillText(p.text, Math.min(630, Math.max(90, p.x * SC)), Math.max(40, p.y * SC));
+      ctx.fillText(p.text, Math.min(630, Math.max(90, p.x * SC - ox)), Math.max(40, p.y * SC - oy));
       continue;
     }
     // Zahlen mit dunkler Kontur, damit sie auf jeder Fruchtfarbe lesbar sind
     const size = (p.kind === 'crit' ? 30 : p.kind === 'gain' ? 21 : 19) * numScale;
     ctx.font = `800 ${size}px 'Bricolage Grotesque', system-ui, sans-serif`;
-    const X = Math.min(700, Math.max(20, p.x * SC)), Y = Math.max(28, p.y * SC);
+    const X = Math.min(700, Math.max(20, p.x * SC - ox)), Y = Math.max(28, Math.min(cv.height - 10, p.y * SC - oy));
     let tx = X;
     if (p.ic){
       const w = ctx.measureText(p.text).width, is = size * 1.05, im = iconImg(p.ic[0], p.ic[1]);
@@ -170,11 +192,11 @@ function buildRunPanel(){
   $('resF').title = W.fruitCur;
   $('resK').innerHTML = `${icon(WI, 'k')}<span id="sK">0</span>`;
   $('resK').title = W.coreCur;
-  $('runStats').innerHTML = [1, 2, 3].map(k => `<span>${W.layers[k].name}</span><span id="sL${k}">0 %</span>`).join('')
-    + (SP.def ? `<span>${SP.def.plural}</span><span id="sL4"></span>` : '');
-  $('legend').innerHTML = [1, 2, 3].map(k =>
+  $('runStats').innerHTML = layerKeys(W).map(k => `<span>${W.layers[k].name}</span><span id="sL${k}">0 %</span>`).join('')
+    + (SP.def ? `<span>${SP.def.plural}</span><span id="sLsp"></span>` : '');
+  $('legend').innerHTML = layerKeys(W).map(k =>
     `<div><span class="sw" style="background:${W.layers[k].sw}"></span>${W.layers[k].name}, ${W.layers[k].note}</div>`).join('')
-    + (SP.def ? `<div><span class="sw" style="background:${W.layers[4].sw}"></span>${SP.def.name}, ${W.layers[4].note}</div>` : '');
+    + (SP.def ? `<div><span class="sw" style="background:${W.layers[SPK].sw}"></span>${SP.def.name}, ${W.layers[SPK].note}</div>` : '');
   const id = save.abil.active, b = $('abilBtn');
   b.hidden = !id;
   b.dataset.t = '';
@@ -201,8 +223,8 @@ function hud(){
   $('stBar').classList.toggle('low', f < 0.25);
   $('sF').textContent = fmtInt(run.f);
   $('sK').textContent = fmtInt(run.k);
-  for (const k of [1, 2, 3]) $('sL' + k).textContent = Math.round(pctOf(k)) + ' %';
-  if (SP.def && $('sL4')) $('sL4').textContent = spSummary().val;
+  for (const k of layerKeys(W)) $('sL' + k).textContent = Math.round(pctOf(k)) + ' %';
+  if (SP.def && $('sLsp')) $('sLsp').textContent = spSummary().val;
   $('vPow').textContent = fmt2(effPower());
   $('vRate').textContent = fmt2(effRate());
   $('vSeg').textContent = S.segs;

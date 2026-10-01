@@ -502,6 +502,64 @@ Ideen für später: mehr Brockenarten für jede neue Frucht (je eine eigene Eige
 
 Offen: mehr Brockenarten für neue Früchte (jede mit eigener Eigenschaft), Balance der Darm-Upgrades beim Anspielen, eventuell Sonderzilien.
 
+## Plan: Pflaume, Apfel, Kürbis, Darm-Ausgänge, wachsende Raupe (entschieden 01.10.2026)
+
+### Neue Früchte
+
+| Frucht | Aussehen | Schichten | Wendung |
+|---|---|---|---|
+| **Pflaume** | dunkles Blauviolett mit weißlichem Wachsreif, goldgelbes Fruchtfleisch, leicht oval mit Bauchnaht | Haut, Fruchtfleisch, Stein (flach, länglich, mit scharfer Kante) | Die **Naht** ist eine weiche Linie durch die Haut (immer da, anders als Faulstellen). Der Stein ist **steinlösend**: Er liegt lose in einem schmalen Hohlraum und lässt sich von allen Seiten anknabbern. |
+| **Apfel** | Querschnitt: dünne rot-grüne Schale, cremeweißes Fruchtfleisch, fünfzackiges Kerngehäuse mit fünf Kammern | **vier**: Schale, Fruchtfleisch, Kerngehäuse (Pergament, härter als das Fleisch, bringt aber nicht mehr Fruchtwährung), Kerne (hart, Kernwährung) | Angefressenes Fruchtfleisch wird nach ein paar Sekunden **braun** (nur Optik). |
+| **Kürbis** | orange, gerippter Rand, festes Fruchtfleisch, innen Hohlraum mit Fasern und vielen flachen weißen Kernen | vier: Schale, Fruchtfleisch, Fasern (sehr weich, bringen fast nichts), Kerne (hart, Kernwährung) | Die Mitte ist größtenteils leer. Die Kerne liegen verstreut in den Fasern. Erste richtig große Frucht. |
+
+### Darm: verdeckte Ausgänge
+
+- Jede Brockenart hat einen **richtigen Ausgang** (×2,5; Pflaume ×1,6, weil der Dickdarm breit ist; Apfel ×3, weil der Blinddarm schmal ist), alle anderen zählen ×1. Die Multiplikatoren stehen **nicht mehr am Brett**, man findet sie heraus. Der Blinddarm verliert sein ×2 für alle.
+- Rückmeldung: Der richtige Ausgang leuchtet kräftig auf und klingt anders. Beim ersten Mal erscheint „Entdeckt!“, und in der Darm-Seitenleiste steht ab dann z. B. „Walnussöl → Lymphgefäß“ mit einem kurzen echten Fakt. Noch nicht entdeckte Brockenarten stehen dort mit „?“.
+
+| Brocken | Eigenschaft | Richtiger Ausgang | Warum (echt) |
+|---|---|---|---|
+| Beere | klein, springt voll ab | Pfortader | Fruchtzucker und Vitamin C sind wasserlöslich, gehen ins Blut zur Leber |
+| Kirsche | groß, schwer | Pfortader | Zucker, Farbstoffe (Anthocyane) |
+| Walnussöl | zäh, haftet an der Zilie | Lymphgefäß | Fett wird als Chylomikronen über die Lymphe aufgenommen |
+| **Pflaume** | **glitschig**: fällt schnell, kaum Reibung, prallt flach und schräg ab | Dickdarm | Sorbit und Ballaststoffe ziehen Wasser in den Dickdarm (abführend) |
+| **Apfel** | **quillt**: wird mit jedem Zilientreffer größer und schwerer, springt immer weniger | Blinddarm | Pektin wird von Bakterien vergoren |
+| **Kürbis** | **platzt** beim ersten Zilientreffer in 5 Kerne, die einzeln Punkte sammeln | Lymphgefäß | Beta-Carotin ist fettlöslich, die Kerne sind ölig |
+
+- **Gallen-Zilie** (Darm-Upgrade, bezahlt mit Nussholz, erscheint ab der Walnuss): eine zusätzliche, grüne Zilie, die man wie die anderen stellt. Fett-Brocken (Walnussöl, Kürbis), die sie berühren, sind **emulgiert**: Sie haften nicht mehr und springen besser ab, sammeln also mehr Treffer. Kein eigener Multiplikator, das Lymphgefäß zählt unabhängig von der Galle. (Echt: Gallensäuren zerteilen Fett in feine Tröpfchen; die Galle mündet zusammen mit der Bauchspeicheldrüse direkt hinter dem Magenpförtner.)
+
+### Raupe wächst mit (Larvenstadien) und mitlaufende Kamera
+
+- Mit jeder freigeschalteten Welt häutet sich die Raupe ins nächste **Larvenstadium** (L1 Johannisbeere bis L6 Kürbis). In der neuesten Welt ist alles wie bisher. In früheren Früchten ist die Raupe größer, und zwar im Verhältnis der Fruchtradien im Raster (die schon mit der Wurzel der echten Größe gestaucht sind): Ab dem Kürbis ist sie in der Johannisbeere gut 6-mal so groß und frisst die Beere fast in einem Biss. Die Raupe wächst damit etwas langsamer als die echten Früchte; spätere Früchte wirken größer.
+- **Kamera:** Passt die Frucht nicht mehr ins Bild (ab Pflaume, deutlich bei Apfel und Kürbis), folgt die Kamera dem Kopf. Bei größerem Larvenstadium zoomt sie etwas heraus, sodass man sieht, wie groß die Raupe geworden ist.
+
+### Werte
+
+Härte, Kosten, Grundverbrauch und Freischaltkosten werden mit der Bot-Simulation vorjustiert. Neue Upgrade-Ringe 5–7 (Kiefer, Krit-Chance, Krit-Schaden, Ausdauer, Verdauung, Tempo und je ein bis zwei weitere). Songs für die neuen Welten folgen später, bis dahin läuft der Song der Johannisbeere.
+
+## Umsetzung Stufe 18: Pflaume, Apfel, Kürbis, verdeckte Ausgänge, Larvenstadien, Kamera
+
+Umgesetzt nach dem Plan oben. Abweichungen und Werte:
+
+- **Biss-Fix vorher (01.10.2026):** Die Bisskraft bleibt nach Herkunftsschicht getrennt und läuft nur in gleich harte oder weichere Pixel über. Vorher schob weiches Fruchtfleisch seinen ganzen Überschuss in einen angrenzenden Kern (bei der Kirsche etwa 2,6-facher Schaden am Stein). Weil die Kerne dadurch bisher heimlich mitbezahlt wurden, kam die Kirsche nach dem Fix erst nach 19 statt 12 Runs. Ausgleich: **Beerenkerne Härte 90** (vorher 210), **Kirschstein 500** (660).
+- **Schichten:** Eine Frucht kann jetzt bis zu vier Schichten haben. Die Sonderstellen liegen dafür als Schicht 9 im Raster (`SPK`), nicht mehr als Schicht 4.
+- **Werte der neuen Welten** (Härte / Bisskosten):
+
+| Welt | R | Grundverbrauch | Schichten | Freischalten |
+|---|---|---|---|---|
+| Pflaume | 193 | 3,0/s | Haut 260 / 4,2 · Fruchtfleisch 28 / 1,6 · Stein 2600 / 7 | 300 Walnusskerne |
+| Apfel | 232 | 3,6/s | Schale 700 / 5 · Fruchtfleisch 70 / 2 · Kerngehäuse 2500 / 4 (Ertrag 0,1 statt 0,15) · Kerne 8000 / 9 | 1500 Pflaumensteine |
+| Kürbis | 486 | 4,5/s | Schale 900 / 6 · Fruchtfleisch 220 / 2,5 · Fasern 15 / 1 · Kerne 20000 / 9 (0,2 Kürbiskerne je Pixel) | 1200 Apfelkerne |
+
+- **Upgrade-Ringe 5–7** je Welt: Kiefer (+25 / +70 / +200 Bisskraft), Krit-Chance IV–VI, Krit-Schaden IV–VI, Ausdauer (+15 / +20 / +30), Verdauung der Welt, Takt IV–VI; dazu Backentaschen (Pflaume), Diamantmandibeln und Panzerhaut (Apfel), Riesenschlund und Segment IV (Kürbis). Fähigkeiten-Knoten der neuen Ringe kosten 1500 / 3000 Fruchtwährung als Grundpreis.
+- **Apfel braun:** Freigelegtes Fruchtfleisch (auch schräg benachbart) wird nach 2–3,5 s braun.
+- **Darm:** Brockenarten Pflaume (glitschig: Schwerkraft ×1,35, flacher Abprall, behält die Seitwärtsbewegung), Apfel (quillt je Treffer von Radius 6,5 bis 10,5, springt dabei bis auf 40 % ab), Kürbis (platzt beim ersten Treffer in 5 Kerne, die die bisherigen Punkte und je ein Fünftel der Nährstoffe übernehmen). Die Ausgänge zeigen keine Faktoren mehr. Der richtige Ausgang leuchtet und klingt; beim ersten Mal „Entdeckt!“, die Seitenleiste listet alle Früchte mit „?“ oder Ausgang und Fakt (`save.gutFound`). Gallen-Zilie: Darm-Upgrade für 900 Nussholz, grün, erste freie Stelle unter dem Pförtner, wird mit der Stellung gespeichert (`gutLay.g`). Sie zählt auch als normale Zilie.
+- **Kalibrierung** (Grundstellung, 3 Zilien): Schnitt bei zufälligem Pförtner 2,4–3,2 Punkte für alle Arten. Die Pflaume landet bei 70 % der Pförtner-Stellen im Dickdarm, darum nur ×1,6. Mit Gallen-Zilie steigt das Walnussöl bei 5 Zilien von 4,0 auf 4,5 Punkte im Schnitt (bester Wert 17,5 → 22,5).
+- **Larvenstadium:** Größe der Raupe = Fruchtradius der neuesten Welt / Fruchtradius der gespielten Welt (Kürbis frei: Johannisbeere ×6,2, Kirsche ×4, Walnuss ×2,8). Maul, Schritt, Brennhaare, Schub, Säurespucke und Seidenfaden wachsen mit. Mit allen frühen Upgrades ist die Johannisbeere ab dem Kürbis in 5 Bissen weg. Die Raupe darf dann auch über den Rand des Rasters hinaus.
+- **Kamera:** zeigt bis zu 450 Rasterpixel in der Breite (Kirsche und Walnuss bleiben ganz im Bild), folgt sonst dem Kopf. Im höheren Larvenstadium zoomt sie mit der Wurzel der Raupengröße heraus. Hochgeladen wird nur der sichtbare Ausschnitt des Rasters (der Kürbis hat 1,2 Mio. Pixel).
+- **Bot-Simulation** (Fähigkeiten fest, verdaut bei vollem Magen): Kirsche nach 13 Runs (5 min), Walnuss nach 32 (12,5–13 min), Pflaume nach 55–60 (23–26 min), Apfel nach 81–84 (35–37 min), Kürbis nach 104–105 (49–51 min). Im Kürbis frisst ein Run anfangs nur 1–2 % jeder Schicht; er ist als Landschaft gedacht.
+- Noch offen: eigene Songs für Pflaume, Apfel und Kürbis (bis dahin der Song der Johannisbeere); der Upgrade-Baum wird mit sieben Ringen außen eng, die Beschriftungen überlappen teils.
+
 ## Plan: Setzkasten und Fressbuch (Sonderstellen umgesetzt in Stufe 10)
 
 Ziel: Im Run gibt es etwas anzusteuern, und es gibt Langzeitziele ohne Prestige. Reihenfolge der Umsetzung: Sonderstellen → Setzkasten → Fressbuch → danach neue Früchte.
@@ -631,9 +689,9 @@ Weitere Seiten wie Newgrounds, CrazyGames oder Poki sind eher für kostenlose Br
 - Darm (Stufe 17) im Spiel anspielen: Ist der Ertrag (ganz verdaut ab 14 Punkten) passend? Lohnt sich das Umstellen je Frucht, und kommt Gedächtnis zur richtigen Zeit?
 - Ausdauer- und Ertragswerte sind per Bot-Simulation vorjustiert (siehe "Umsetzung Stufe 1"), müssen aber noch von Hand angespielt werden.
 - Kosten- und Wachstumskurven feinjustieren, sobald man selbst gespielt hat.
-- Welten 4–6 (Pflaume, Apfel, Kürbis): Aufbau, Werte, Upgrade-Ringe.
+- Welten 4–6 (Pflaume, Apfel, Kürbis): Plan steht (siehe oben), Werte beim Anspielen prüfen.
 - Wofür Walnusskerne ausgegeben werden (bis zur Pflaume noch ohne Verwendung).
 - Fähigkeiten-Balance weiter beobachten (Brennhaare und Gabeldrüse in der Johannisbeere stark).
-- Mitlaufende Kamera für große Früchte (ab Apfel/Kürbis).
+- Mitlaufende Kamera für große Früchte: geplant (siehe oben).
 - Neue Ausdauer (Stufe 9) von Hand anspielen, vor allem: Fühlt sich der Grundverbrauch im Stand zu streng an? Ist die Walnuss mit 2,2/s zu hektisch?
 - Abklingzeit (30 s) und Stärke der Fähigkeiten mit den Admin-Messwerten nachjustieren.

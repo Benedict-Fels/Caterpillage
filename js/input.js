@@ -1,8 +1,9 @@
 'use strict';
 const keys = { left: 0, right: 0, up: 0, down: 0 };
-function toSim(e){
+function toSim(e){                                         // Zeiger → Raster, über die Kamera
   const r = cv.getBoundingClientRect();
-  return { x: (e.clientX - r.left) / r.width * SIM, y: (e.clientY - r.top) / r.height * SIM };
+  ptr.on = true; ptr.u = (e.clientX - r.left) / r.width; ptr.v = (e.clientY - r.top) / r.height;
+  return { x: cam.x + ptr.u * cam.V, y: cam.y + ptr.v * cam.V };
 }
 cv.addEventListener('pointermove', e => { if (ctrl.mode !== 'mouse' || paused) return; const p = toSim(e); cat.target.x = p.x; cat.target.y = p.y; });
 cv.addEventListener('pointerdown', e => {

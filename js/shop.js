@@ -6,7 +6,7 @@ let selected = 'kiefer';
 
 function nodeAngle(u){ return BR[u.br] + u.off; }
 function nodePos(u){
-  const a = nodeAngle(u) * Math.PI / 180, r = RINGS[nodeRing(u)] || RINGS[4];
+  const a = nodeAngle(u) * Math.PI / 180, r = RINGS[nodeRing(u)] || RINGS[RINGS.length - 1];
   return { x: 50 + Math.cos(a) * r, y: 50 + Math.sin(a) * r };
 }
 function lineFrom(u){
@@ -58,7 +58,7 @@ function missing(c){
 }
 
 function renderTree(){
-  const v = RINGS[Math.min(4, save.unlocked + 1)] + 8, z = 50 / v;
+  const v = RINGS[Math.min(RINGS.length - 1, save.unlocked + 1)] + 8, z = 50 / v;
   const svg = $('treeLines');
   svg.setAttribute('viewBox', `${50 - v} ${50 - v} ${2 * v} ${2 * v}`);
   let s = '';
@@ -138,7 +138,7 @@ function renderShop(){
   if (L){
     const w = WORLDS[L.w];
     $('lastRun').innerHTML = `Letzter Run (${w.name}): ${money(L.w, 'f', L.f, '+')}` + (L.k >= 1 ? `, ${money(L.w, 'k', L.k, '+')}` : '') + (L.test ? ' <b>(Testlauf, nicht gutgeschrieben)</b>' : '') +
-      `<br>${[1, 2, 3].map(k => `${w.layers[k].name} ${Math.round(L.p[k])} %`).join(', ')}.`;
+      `<br>${layerKeys(w).map(k => `${w.layers[k].name} ${Math.round(L.p[k] || 0)} %`).join(', ')}.`;
   } else $('lastRun').innerHTML = '';
 
   renderWorlds();
@@ -214,7 +214,8 @@ function openChoice(){
   const cd = $('choiceDlg');
   $('choiceTitle').textContent = `${WORLDS[c.from].name} geschafft`;
   $('choiceNote').textContent = `Wähle eine neue Fähigkeit. Die anderen können nach einer späteren Welt wieder angeboten werden. `
-    + (c.from + 1 < WORLDS.length ? `Ihre drei Ausbau-Knoten erscheinen im Baum und kosten ${WORLDS[c.from + 1].fruitCur} und ${WORLDS[c.from].coreCur}.` : '');
+    + (c.from + 1 < WORLDS.length ? `Ihre drei Ausbau-Knoten erscheinen im Baum und kosten ${WORLDS[c.from + 1].fruitCur} und ${WORLDS[c.from].coreCur}.` : '')
+    + ` Die Raupe häutet sich ins Larvenstadium L${c.from + 2}: In früheren Früchten ist sie jetzt größer, in der Johannisbeere ×${fmt(Math.round(catGrow(0) * 10) / 10)}.`;
   $('choices').innerHTML = c.options.map(id => `<button class="choice" data-choose="${id}">
       <small>${ABIL[id].kind}</small><b>${ABIL[id].name}</b><span>${ABIL[id].desc([0, 0, 0])}</span>
       <span class="note">Ausbau: ${ABIL[id].nodes.map(n => n.name).join(', ')}</span></button>`).join('');

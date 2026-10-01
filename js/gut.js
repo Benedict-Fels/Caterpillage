@@ -5,7 +5,9 @@
    - Pförtner und Zilien stellt der Spieler selbst. Zilien sind federnde Büschel:
      Ein Treffer stößt den Brocken ab (die Beere höchstens etwa 5 Zilienradien weit).
    - Jede Zilie gibt einem Brocken höchstens 3-mal Punkte (3, 2, 1), danach nur noch weiche Abpraller.
-   - Unten die Ausgänge des Dünndarms mit Bonus auf alle gesammelten Punkte.
+   - Unten die Ausgänge des Dünndarms. Jede Brockenart hat einen richtigen Ausgang (GUT.PREF), der zählt
+     ×GUT.RIGHT, alle anderen ×1. Am Brett steht das nicht, man findet es heraus.
+   - Gallen-Zilie (Upgrade): emulgiert Fett-Brocken, die sie berühren (haften nicht mehr, springen besser).
    - Feste Schrittweite, kein Zufall: gleiche Frucht + gleiche Stellung = gleicher Weg.
    ===================================================================== */
 const GUT = {
@@ -27,24 +29,48 @@ GUT.BOUNCE = Math.sqrt(2 * GUT.G * 5 * GUT.CIL_R);                // Abprall der
 GUT.MIN_DIST = 2 * GUT.HAIR + 4;                                  // Zilien berühren sich nicht, auch nicht mit den Härchen
 GUT.EDGE = GUT.WALL + GUT.CIL_R + 2 * 10.5 + 6;                   // Spalt zur Wand bleibt breiter als der dickste Brocken (sonst klemmt er)
 /* Brockenarten je Welt: r Radius, jump Anteil am vollen Abprall, keep Anteil der Seitwärtsbewegung beim Treffer,
-   wall Sprungkraft an der Wand, drag Zähigkeit (bremst den Fall), stick Haften an der Zilie. Spätere Welten: vorerst wie die Beere. */
+   wall Sprungkraft an der Wand, drag Zähigkeit (bremst den Fall), stick Haften an der Zilie,
+   grav Schwerkraft-Faktor, swell Wachstum des Radius je Treffer (bis rMax, springt dabei immer weniger),
+   burst Zahl der Kerne, in die der Brocken beim ersten Treffer platzt, fat = Fett (die Gallen-Zilie emulgiert ihn),
+   emul = Werte nach dem Emulgieren. */
 GUT.TYPES = [
   { id: 'beere', name: 'Beerenbrocken', col: '#D42A40', r: 7, jump: 1.0, keep: 0.8, wall: 0.75, drag: 0, stick: 0 },
   { id: 'kirsche', name: 'Kirschbrocken', col: '#8A0E26', r: 10.5, jump: 0.5, keep: 0.9, wall: 0.35, drag: 0, stick: 0 },
-  { id: 'oel', name: 'Walnussöl', col: '#E3B94A', r: 8, jump: 0.08, keep: 1.0, wall: 0.05, drag: 1.6, stick: 900 },
+  { id: 'oel', name: 'Walnussöl', col: '#E3B94A', r: 8, jump: 0.08, keep: 1.0, wall: 0.05, drag: 1.6, stick: 900, fat: true,
+    emul: { jump: 0.6, keep: 0.9, wall: 0.4, drag: 0.3, stick: 0 } },
+  { id: 'pflaume', name: 'Pflaumenbrocken', col: '#5A3A86', r: 8, jump: 0.3, keep: 1.0, wall: 0.6, drag: 0, stick: 0, grav: 1.35, right: 1.6 },   // glitschig; der Dickdarm ist breit, darum weniger
+  { id: 'apfel', name: 'Apfelbrocken', col: '#D8DE8A', r: 6.5, rMax: 10.5, swell: 0.9, jump: 0.95, keep: 0.85, wall: 0.6, drag: 0, stick: 0, right: 3 },   // quillt; der Blinddarm ist schmal, darum mehr
+  { id: 'kuerbis', name: 'Kürbisbrocken', col: '#E07A1F', r: 9.5, jump: 0.55, keep: 0.9, wall: 0.4, drag: 0, stick: 0, burst: 5, fat: true,
+    emul: { jump: 0.75 } },                                       // platzt in Kerne
 ];
+GUT.SEED = { id: 'kern', name: 'Kürbiskern', col: '#F1E7C9', r: 4.5, jump: 0.9, keep: 0.85, wall: 0.7, drag: 0, stick: 0, fat: true,
+  emul: { jump: 1.0 } };
 const gutType = w => GUT.TYPES[w] || GUT.TYPES[0];
-/* Unten: Übergang vom Dünndarm. Nicht symmetrisch. fat = Bonus für Öl statt mult. */
+/* Unten: Übergang vom Dünndarm. Nicht symmetrisch. */
 GUT.HOLES = [
-  { id: 'dick', name: 'Dickdarm', x1: GUT.WALL, x2: 104, mult: 1, col: '#6B3A2E' },
-  { id: 'pfort', name: 'Pfortader', sub: 'zur Leber', x1: 104, x2: 176, mult: 1.5, col: '#B3243A' },
-  { id: 'dick', name: 'Dickdarm', x1: 176, x2: 290, mult: 1, col: '#6B3A2E' },
-  { id: 'lymph', name: 'Lymphgefäß', sub: 'Fett ×2', x1: 290, x2: 370, mult: 1.3, fat: 2, col: '#D9B84A' },
-  { id: 'dick', name: 'Dickdarm', x1: 370, x2: 426, mult: 1, col: '#6B3A2E' },
-  { id: 'blind', name: 'Blinddarm', x1: 426, x2: GUT.W - GUT.WALL, mult: 2, col: '#8A4FB3' },
+  { id: 'dick', name: 'Dickdarm', x1: GUT.WALL, x2: 104, col: '#6B3A2E' },
+  { id: 'pfort', name: 'Pfortader', x1: 104, x2: 176, col: '#B3243A' },
+  { id: 'dick', name: 'Dickdarm', x1: 176, x2: 290, col: '#6B3A2E' },
+  { id: 'lymph', name: 'Lymphgefäß', x1: 290, x2: 370, col: '#D9B84A' },
+  { id: 'dick', name: 'Dickdarm', x1: 370, x2: 426, col: '#6B3A2E' },
+  { id: 'blind', name: 'Blinddarm', x1: 426, x2: GUT.W - GUT.WALL, col: '#8A4FB3' },
 ];
-const gutMult = (h, b) => b.T.id === 'oel' && h.fat ? h.fat : h.mult;
+/* Richtiger Ausgang je Brockenart (echt: wasserlösliches ins Blut zur Leber, Fett in die Lymphe, Ballaststoffe in den Dickdarm,
+   Pektin wird vergoren) und warum. Die Kürbiskerne zählen wie der Kürbis. */
+GUT.RIGHT = 2.5;                                                   // Standard; einzelne Arten haben eigene Werte (right)
+GUT.PREF = { beere: 'pfort', kirsche: 'pfort', oel: 'lymph', pflaume: 'dick', apfel: 'blind', kuerbis: 'lymph', kern: 'lymph' };
+GUT.FACT = {
+  beere: 'Fruchtzucker und Vitamin C sind wasserlöslich und gehen ins Blut, über die Pfortader zur Leber.',
+  kirsche: 'Zucker und rote Farbstoffe (Anthocyane) sind wasserlöslich und gehen über die Pfortader zur Leber.',
+  oel: 'Fett ist zu groß für die Blutgefäße. Es wird verpackt (Chylomikronen) und geht über die Lymphe.',
+  pflaume: 'Sorbit und Ballaststoffe ziehen Wasser in den Dickdarm. Darum wirken Pflaumen abführend.',
+  apfel: 'Pektin quillt und wird erst von den Bakterien vergoren, hier im Blinddarm.',
+  kuerbis: 'Beta-Carotin ist fettlöslich und geht mit dem Fett aus den Kernen über die Lymphe.',
+};
+const gutPrefOf = T => GUT.PREF[T.id];
+const gutMult = (h, b) => gutPrefOf(b.T) === h.id ? (b.T.right || GUT.RIGHT) : 1;
 GUT.DEFAULT = [[140, 390], [320, 450], [210, 570], [370, 630], [100, 680], [300, 330], [420, 400]];   // Grundstellung der Zilien
+GUT.BILE_SPOTS = [[250, 300], [80, 520], [400, 520], [240, 700], [60, 300], [420, 300]];             // erste freie Stelle der Gallen-Zilie
 
 /* Zilien in die erlaubten Grenzen holen und auseinanderschieben */
 function gutClampCilium(x, y, others){
@@ -54,7 +80,7 @@ function gutClampCilium(x, y, others){
   return [Math.max(G.EDGE, Math.min(G.W - G.EDGE, x)), Math.max(G.PF_Y + 70, Math.min(G.FLOOR - 70, y))];
 }
 /* Stellung { pf, z: [[x, y], …] } auf n Zilien bringen: fehlende aus der Grundstellung, zu viele weg */
-function gutFitLayout(L, n){
+function gutFitLayout(L, n, bile){
   const z = (L && L.z ? L.z.slice(0, n) : []).map(p => p.slice());
   for (const p of GUT.DEFAULT){
     if (z.length >= n) break;
@@ -63,13 +89,38 @@ function gutFitLayout(L, n){
   while (z.length < n) z.push([GUT.W / 2, GUT.PF_Y + 100 + z.length * 80]);
   const out = [];
   for (const p of z){ const c = gutClampCilium(p[0], p[1], out.map(q => ({ x: q[0], y: q[1] }))); out.push(c); }
-  return { pf: L && typeof L.pf === 'number' ? Math.max(GUT.WALL + 8, Math.min(GUT.W - GUT.WALL - 8, L.pf)) : GUT.W / 2, z: out };
+  let g = null;                                                  // Gallen-Zilie: gespeicherte Stelle oder die erste freie
+  if (bile){
+    const others = out.map(q => ({ x: q[0], y: q[1] }));
+    const cand = (L && L.g ? [L.g] : []).concat(GUT.BILE_SPOTS);
+    for (const c of cand){ const q = gutClampCilium(c[0], c[1], others); if (others.every(o => Math.hypot(o.x - q[0], o.y - q[1]) >= GUT.MIN_DIST - 0.5)){ g = q; break; } }
+    if (!g) g = gutClampCilium(cand[0][0], cand[0][1], others);
+  }
+  return { pf: L && typeof L.pf === 'number' ? Math.max(GUT.WALL + 8, Math.min(GUT.W - GUT.WALL - 8, L.pf)) : GUT.W / 2, z: out, g };
 }
 
 function gutBall(k, px){
   const T = gutType(k);
-  return { x: Math.max(GUT.WALL + T.r, Math.min(GUT.W - GUT.WALL - T.r, px)), y: GUT.PF_Y + 12, vx: 0, vy: 60, T, k,
-    got: GUT.BASE, hitsBy: new Map(), touching: new Set(), chain: 0, done: false, trail: [], still: 0 };
+  return { x: Math.max(GUT.WALL + T.r, Math.min(GUT.W - GUT.WALL - T.r, px)), y: GUT.PF_Y + 12, vx: 0, vy: 60, T, k, r: T.r,
+    got: GUT.BASE, hitsBy: new Map(), touching: new Set(), chain: 0, done: false, trail: [], still: 0, share: 1, emul: false };
+}
+/* Fett-Brocken an der Gallen-Zilie: emulgiert, die Werte aus T.emul gelten ab jetzt */
+function gutEmulsify(b){ b.emul = true; b.T = Object.assign({}, b.T, b.T.emul); }
+/* Kürbis: platzt beim ersten Treffer in Kerne, fächerförmig nach oben (fest, kein Zufall). Jeder Kern übernimmt die
+   bisherigen Punkte und einen gleichen Teil der Nährstoffe. */
+function gutBurst(b, z, balls, ev){
+  const n = b.T.burst, kids = [], fam = { left: n };
+  for (let i = 0; i < n; i++){
+    const a = -Math.PI / 2 + (i - (n - 1) / 2) * 0.55, sp = 330;
+    const T = b.emul ? Object.assign({}, GUT.SEED, GUT.SEED.emul) : GUT.SEED;
+    const c = { x: b.x + Math.cos(a) * 3, y: b.y + Math.sin(a) * 3, vx: Math.cos(a) * sp + b.vx * 0.3, vy: Math.sin(a) * sp * 0.8, T, k: b.k, r: T.r,
+      got: b.got, hitsBy: new Map(b.hitsBy), touching: new Set(b.touching), chain: b.chain, done: false, trail: [], still: 0,
+      share: b.share / n, emul: b.emul, kid: true, fam };
+    if (b.v !== undefined) c.v = b.v / n;
+    kids.push(c); balls.push(c);
+  }
+  b.done = true; b.burst = true;
+  ev.burst && ev.burst(b, kids);
 }
 
 /* Ein Physikschritt. cilia: [{x, y, fl}], ev: hit(b, z, gain, n), soft(b, vn), land(b, hole, mult, points) */
@@ -77,14 +128,15 @@ function gutStep(balls, cilia, dt, ev){
   const G = GUT;
   for (const b of balls){
     if (b.done) continue;
-    const T = b.T, r = T.r;
-    b.vy += G.G * dt;
+    const T = b.T, r = b.r;
+    b.vy += G.G * (T.grav || 1) * dt;
     if (T.drag){ b.vx *= 1 - T.drag * dt; b.vy *= 1 - T.drag * dt * 0.6; }     // Öl ist zäh
     const sp = Math.hypot(b.vx, b.vy); if (sp > 900){ b.vx *= 900 / sp; b.vy *= 900 / sp; }
     b.x += b.vx * dt; b.y += b.vy * dt;
     if (b.x < G.WALL + r){ b.x = G.WALL + r; b.vx = Math.abs(b.vx) * T.wall; }
     if (b.x > G.W - G.WALL - r){ b.x = G.W - G.WALL - r; b.vx = -Math.abs(b.vx) * T.wall; }
     const now = new Set();
+    let burstAt = null;
     for (const z of cilia){
       const dx = b.x - z.x, dy = b.y - z.y, d = Math.hypot(dx, dy), R = r + G.CIL_R;
       if (d >= R + (T.stick ? 1.5 : 0)) continue;
@@ -94,32 +146,39 @@ function gutStep(balls, cilia, dt, ev){
       const vn = b.vx * nx + b.vy * ny;
       const fresh = !b.touching.has(z);                           // neuer Kontakt = ein Treffer (Rollen zählt nicht mehrfach)
       const n = b.hitsBy.get(z) || 0, gain = fresh && n < G.GAIN.length ? G.GAIN[n] : 0;
+      if (z.bile && T.fat && !b.emul){ gutEmulsify(b); ev.emul && ev.emul(b, z); }
+      const jump = T.swell ? b.T.jump * Math.pow(b.T.r / b.r, 2) : b.T.jump;          // gequollen springt weniger
       if (vn < 0){
         const vtx = b.vx - vn * nx, vty = b.vy - vn * ny;
         let out;
-        if (gain > 0) out = Math.min(G.BOUNCE * T.jump, -vn * 0.6 * T.jump + 160 * T.jump);   // federnd, gedeckelt
-        else out = -vn * (T.stick ? 0 : 0.4);                                                 // erschöpft: weich
-        b.vx = vtx * T.keep + nx * out; b.vy = vty * T.keep + ny * out;
+        if (gain > 0) out = Math.min(G.BOUNCE * jump, -vn * 0.6 * jump + 160 * jump);   // federnd, gedeckelt
+        else out = -vn * (b.T.stick ? 0 : 0.4);                                                 // erschöpft: weich
+        b.vx = vtx * b.T.keep + nx * out; b.vy = vty * b.T.keep + ny * out;
         const cap = G.BOUNCE * 1.05, s2 = Math.hypot(b.vx, b.vy); if (gain > 0 && s2 > cap){ b.vx *= cap / s2; b.vy *= cap / s2; }
       }
       // Öl haftet: zieht zur Zilie hin und läuft um sie herum, bis die Schwerkraft es unten abreißt
-      if (T.stick && ny < 0.6){ b.vx -= nx * T.stick * dt; b.vy -= ny * T.stick * dt; }
+      if (b.T.stick && ny < 0.6){ b.vx -= nx * b.T.stick * dt; b.vy -= ny * b.T.stick * dt; }
       // Genau oben auf der Kuppe bliebe ein Brocken liegen: die Härchen schieben ihn zur Seite, auf der er mehr hängt (rechts, wenn genau mittig)
-      if (ny < -0.9 && Math.abs(b.vx) < 40 && (T.stick || gain === 0)) b.vx += (dx >= 0 ? 1 : -1) * 900 * dt;
+      if (ny < -0.9 && Math.abs(b.vx) < 40 && (b.T.stick || gain === 0)) b.vx += (dx >= 0 ? 1 : -1) * 900 * dt;
       if (fresh){
-        if (gain > 0){ b.got += gain; b.chain++; z.fl = 1; ev.hit && ev.hit(b, z, gain, n); }
+        if (gain > 0){
+          b.got += gain; b.chain++; z.fl = 1; ev.hit && ev.hit(b, z, gain, n);
+          if (T.swell) b.r = Math.min(T.rMax, b.r + T.swell);                                      // Pektin quillt
+          if (T.burst && !burstAt) burstAt = z;
+        }
         else if (Math.abs(vn) > 60) ev.soft && ev.soft(b, vn);
         b.hitsBy.set(z, n + 1);
       }
     }
     b.touching = now;
+    if (burstAt){ gutBurst(b, burstAt, balls, ev); continue; }
     // Trennwände zwischen den Ausgängen
     if (b.y > G.FLOOR - 24){
       for (const h of G.HOLES){ const px = h.x1; if (px <= G.WALL) continue; const dx = b.x - px; if (Math.abs(dx) < r + 3){ b.x = px + Math.sign(dx || 1) * (r + 3); b.vx = -b.vx * 0.5; } }
     }
     if (b.y > G.FLOOR + 12){
       const h = G.HOLES.find(h => b.x >= h.x1 && b.x < h.x2) || G.HOLES[0], m = gutMult(h, b);
-      b.done = true; b.hole = h; b.mult = m; b.points = b.got * m;
+      b.done = true; b.hole = h; b.mult = m; b.points = b.got * m; b.right = m > 1;
       ev.land && ev.land(b, h, m, b.points);
       continue;
     }
@@ -128,13 +187,23 @@ function gutStep(balls, cilia, dt, ev){
   }
 }
 
-/* Einen Brocken ohne Zeichnen durchfallen lassen: Punkte (gesammelt × Ausgang) und Ausgang */
-function gutSimulate(k, px, layoutZ){
-  const cil = layoutZ.map(([x, y]) => ({ x, y, fl: 0 })), balls = [gutBall(k, px)];
+/* Einen Brocken ohne Zeichnen durchfallen lassen: Punkte (gesammelt × Ausgang) und Ausgang.
+   Platzt er (Kürbis), zählen die Kerne mit ihrem Anteil; Ausgang und Faktor sind dann die des ersten Kerns. */
+function gutCilia(layoutZ, g){
+  const cil = layoutZ.map(([x, y]) => ({ x, y, fl: 0 }));
+  if (g) cil.push({ x: g[0], y: g[1], fl: 0, bile: true });
+  return cil;
+}
+function gutSimulate(k, px, layoutZ, g){
+  const cil = gutCilia(layoutZ, g), balls = [gutBall(k, px)];
   let res = null;
-  const ev = { land: (b, h, m, pts) => { res = { points: pts, got: b.got, mult: m, hole: h.id }; } };
-  for (let s = 0; s < 240 * 40 && !res; s++) gutStep(balls, cil, GUT.STEP, ev);
-  return res || { points: balls[0].got, got: balls[0].got, mult: 1, hole: 'dick' };
+  const ev = { land: (b, h, m, pts) => {
+    if (!res) res = { points: 0, got: 0, mult: m, hole: h.id };
+    res.points += pts * b.share; res.got += b.got * b.share;
+  } };
+  for (let s = 0; s < 240 * 40 && balls.some(b => !b.done); s++) gutStep(balls, cil, GUT.STEP, ev);
+  for (const b of balls) if (!b.done){ if (!res) res = { points: 0, got: 0, mult: 1, hole: 'dick' }; res.points += b.got * b.share; res.got += b.got * b.share; }
+  return res;
 }
 
-if (typeof module !== 'undefined') module.exports = { GUT, gutType, gutMult, gutBall, gutStep, gutSimulate, gutFitLayout, gutClampCilium };
+if (typeof module !== 'undefined') module.exports = { GUT, gutType, gutMult, gutPrefOf, gutBall, gutStep, gutSimulate, gutFitLayout, gutClampCilium, gutCilia };

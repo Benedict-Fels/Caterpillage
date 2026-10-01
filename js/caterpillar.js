@@ -24,15 +24,22 @@ const effRate = () => S.rate * admMul('rate') * (run.rauschT > 0 ? 1.5 + 0.1 * a
 const effectOn = () => run.rauschT > 0 || run.dash > 0 || !!run.proj || run.beamT > 0;
 /* Messwerte je Quelle: Schaden (ohne Überschuss), gefressene Pixel, Ertrag */
 function meter(src){ return run.m[src] || (run.m[src] = { dmg: 0, px: 0, f: 0, k: 0, hits: 0 }); }
-const headR = () => S.mouth * (run.moltT > 0 ? 1.25 + 0.05 * abNode('haeutung', 1) : 1);
+/* Larvenstadium: Mit jeder freigeschalteten Welt wächst die Raupe. In der neuesten Welt ist sie so groß wie immer,
+   in früheren Früchten größer, im Verhältnis der Fruchtradien (Kürbis → Johannisbeere gut ×6). */
+const larva = () => save.unlocked;                                             // L1 … L6
+const catGrow = (w = WI) => WORLDS[Math.max(w, save.unlocked - 1)].R / WORLDS[w].R;
+const headR = () => S.mouth * catGrow() * (run.moltT > 0 ? 1.25 + 0.05 * abNode('haeutung', 1) : 1);
 const gRest = () => headR() * 1.15;
 const gComp = () => headR() * 0.72;
 const stride = () => (S.segs - 1) * (gRest() - gComp());
 
+// Spur hinter dem Kopf: lang genug für den ganzen Körper (große Raupe = längere Spur)
+const trailLen = () => Math.max(400, Math.ceil((S.segs + 2) * gRest() / STEP * 1.2));
 function resetCat(){
   cat.trail = [];
-  const hx = 26, hy = CY;
-  for (let i = 0; i < 400; i++) cat.trail.push({ x: hx - i * STEP, y: hy });
+  const hx = Math.min(26, CX - R * 1.06 - headR() * 1.4), hy = CY;           // große Raupe startet weiter links
+  cam.init = false;
+  for (let i = 0, n = trailLen(); i < n; i++) cat.trail.push({ x: hx - i * STEP, y: hy });
   cat.dir = 0; cat.t = 0; cat.bitten = false;
   cat.eStart = 1; cat.adv = 0; cat.e = 1;
   cat.target.x = hx; cat.target.y = hy;
@@ -58,11 +65,13 @@ function segments(){
   return out;
 }
 
+/* Rand, bis zu dem der Kopf darf: das Raster, bei größerem Larvenstadium auch ein Stück darüber hinaus */
+const edgeOut = () => (catGrow() - 1) * SIM * 0.6;
 function blocked(x, y){
-  const r = headR() * 0.8, r2 = r * r;
-  if (x < r || y < r || x > SIM - r || y > SIM - r) return true;
-  for (let py = Math.floor(y - r); py <= Math.ceil(y + r); py++){
-    for (let px = Math.floor(x - r); px <= Math.ceil(x + r); px++){
+  const r = headR() * 0.8, r2 = r * r, E = edgeOut();
+  if (x < r - E || y < r - E || x > SIM + E - r || y > SIM + E - r) return true;
+  for (let py = Math.max(0, Math.floor(y - r)); py <= Math.min(SIM - 1, Math.ceil(y + r)); py++){
+    for (let px = Math.max(0, Math.floor(x - r)); px <= Math.min(SIM - 1, Math.ceil(x + r)); px++){
       const dx = px + 0.5 - x, dy = py + 0.5 - y;
       if (dx*dx + dy*dy > r2) continue;
       if (type[py * SIM + px]) return true;
@@ -83,6 +92,6 @@ function advance(want){
     if (!ok) break;
     moved += STEP;
   }
-  if (cat.trail.length > 800) cat.trail.length = 800;
+  const n = trailLen() * 2; if (cat.trail.length > n) cat.trail.length = n;
   return moved;
 }

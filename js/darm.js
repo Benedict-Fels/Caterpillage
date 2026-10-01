@@ -11,7 +11,8 @@
 const gcv = $('gcv'), gctx = gcv.getContext('2d');
 gcv.width = GUT.W * 2; gcv.height = GUT.H * 2;
 const gut = { queue: [], transit: [], balls: [], cilia: [], pops: [], pfX: GUT.W / 2, drag: null, glide: null, pending: false, chosen: null,
-  t: 0, acc: 0, auto: false, autoT: 0, active: false, finished: true, n0: 0, done: 0, got: {}, best: 0, holes: {}, hits: 0, saveT: 0, panelT: 0 };
+  t: 0, acc: 0, auto: false, autoT: 0, active: false, finished: true, n0: 0, done: 0, got: {}, best: 0, holes: {}, hits: 0, saveT: 0, panelT: 0,
+  flash: GUT.HOLES.map(() => 0) };                               // Aufleuchten der Ausgänge (richtiger Ausgang)
 
 /* ---------- Magen (Portionen) ---------- */
 const stomachFull = () => save.gut.p.length >= S.gutCap;
@@ -28,22 +29,31 @@ const payout = (v, points) => v * points / GUT.full * S.gutConv;
 /* ---------- Stellung (Pförtner + Zilien) ---------- */
 function layoutFor(w){
   const L = save.gutLay || {};
-  return gutFitLayout(S.gutMem && L.per && L.per[w] ? L.per[w] : L, S.gutCilia);
+  return gutFitLayout(S.gutMem && L.per && L.per[w] ? L.per[w] : L, S.gutCilia, S.gutBile);
 }
-function snapshot(){ return { pf: Math.round(gut.pfX), z: gut.cilia.map(z => [Math.round(z.x), Math.round(z.y)]) }; }
+function snapshot(){
+  const g = gut.cilia.find(z => z.bile);
+  return { pf: Math.round(gut.pfX), z: gut.cilia.filter(z => !z.bile).map(z => [Math.round(z.x), Math.round(z.y)]), g: g ? [Math.round(g.x), Math.round(g.y)] : null };
+}
 function storeLayout(w){                                        // aktuelle Stellung merken (für alle und, mit Gedächtnis, für diese Frucht)
   const L = save.gutLay = save.gutLay || {}, s = snapshot();
-  L.pf = s.pf; L.z = s.z;
+  L.pf = s.pf; L.z = s.z; L.g = s.g;
   if (S.gutMem && w !== undefined){ L.per = L.per || {}; L.per[w] = s; }
 }
 const newCilium = (x, y) => ({ x, y, fl: 0, hairs: Array.from({ length: 16 }, (_, i) => ({ a: -Math.PI / 2 + (i - 7.5) * 0.39, ph: i * 1.7 })) });
+// Zilien in der Reihenfolge der Stellung, die Gallen-Zilie (falls eingebaut) als letzte
+const layoutPts = L => L.g ? L.z.concat([L.g]) : L.z;
 function applyLayout(L, animate){
+  const pts = layoutPts(L);
+  gut.cilia = gut.cilia.filter(z => !z.bile);
   while (gut.cilia.length < L.z.length) gut.cilia.push(newCilium(L.z[gut.cilia.length][0], L.z[gut.cilia.length][1]));
   gut.cilia.length = L.z.length;
-  if (!animate){ gut.pfX = L.pf; gut.cilia.forEach((z, i) => { z.x = L.z[i][0]; z.y = L.z[i][1]; }); return; }
-  gut.glide = { t: 0, dur: 0.35, from: { pf: gut.pfX, z: gut.cilia.map(z => [z.x, z.y]) }, to: L };
+  if (L.g){ const b = newCilium(L.g[0], L.g[1]); b.bile = true; gut.cilia.push(b); }
+  if (!animate){ gut.pfX = L.pf; gut.cilia.forEach((z, i) => { z.x = pts[i][0]; z.y = pts[i][1]; }); return; }
+  gut.glide = { t: 0, dur: 0.35, from: { pf: gut.pfX, z: gut.cilia.map(z => [z.x, z.y]) }, to: { pf: L.pf, z: pts } };
 }
-const sameLayout = L => Math.abs(L.pf - gut.pfX) < 0.5 && L.z.every((p, i) => gut.cilia[i] && Math.hypot(p[0] - gut.cilia[i].x, p[1] - gut.cilia[i].y) < 0.5);
+const sameLayout = L => Math.abs(L.pf - gut.pfX) < 0.5 && layoutPts(L).length === gut.cilia.length
+  && layoutPts(L).every((p, i) => Math.hypot(p[0] - gut.cilia[i].x, p[1] - gut.cilia[i].y) < 0.5);
 
 /* ---------- Magensack: Brocken liegen als Haufen, nur zur Anzeige ---------- */
 const SX = 168, SY = 86, RX = 112, RY = 72, OUT_A = 0.75;
@@ -124,7 +134,7 @@ function digestAll(pickPf){
   save.gut.p = [];
   for (const it of items){
     const L = layoutFor(it.k), pf = pickPf ? pickPf(it.k, L) : L.pf;
-    const r = gutSimulate(it.k, pf, L.z);
+    const r = gutSimulate(it.k, pf, L.z, L.g);
     got[it.k] = (got[it.k] || 0) + payout(it.v, r.points);
   }
   for (const w in got) addCur(+w, 'f', got[w]);
@@ -164,10 +174,28 @@ const GUT_EV = {
     const cash = payout(b.v, points);
     addCur(b.k, 'f', cash);
     gut.got[b.k] = (gut.got[b.k] || 0) + cash;
-    gut.best = Math.max(gut.best, points); gut.done++;
+    gut.best = Math.max(gut.best, points); if (!b.fam || --b.fam.left === 0) gut.done++;   // Kürbis: zählt, wenn der letzte Kern unten ist
     gut.holes[h.id] = (gut.holes[h.id] || 0) + 1;
-    gut.pops.push({ x: (h.x1 + h.x2) / 2, y: GUT.FLOOR - 16, txt: (m > 1 ? `×${fmt(m)} ` : '') + '+' + fmtNum(cash), cur: b.k, col: m > 1 ? '#FFE08A' : '#F1DCD2', life: 1.4, big: m > 1 });
-    AU.sfx('schale', m >= 2 ? 1 : m > 1 ? 0.9 : 0.5);
+    const right = m > 1, cx = (h.x1 + h.x2) / 2;
+    gut.pops.push({ x: cx, y: GUT.FLOOR - 16, txt: '+' + fmtNum(cash), cur: b.k, col: right ? '#FFE08A' : '#F1DCD2', life: 1.4, big: right });
+    if (right){
+      gut.flash[GUT.HOLES.indexOf(h)] = 1;
+      const id = gutType(b.k).id;                              // Kürbiskerne zählen als Kürbis
+      save.gutFound = save.gutFound || {};
+      if (!save.gutFound[id]){
+        save.gutFound[id] = h.id;
+        gut.pops.push({ x: Math.min(GUT.W - 70, Math.max(70, cx)), y: GUT.FLOOR - 52, txt: 'Entdeckt!', col: '#FFF4E0', life: 2.2, big: true, huge: true });
+        AU.sfx('darmrausch'); renderGutPanel(); persist();
+      } else AU.sfx('blind');
+    } else AU.sfx('schale', 0.5);
+  },
+  burst(b, kids){
+    gut.pops.push({ x: b.x, y: b.y - 16, txt: 'Knack!', col: '#FFE9C2', life: 0.8 });
+    AU.sfx('knack'); AU.sfx('plopp');
+  },
+  emul(b, z){
+    gut.pops.push({ x: z.x, y: z.y - GUT.CIL_R - 14, txt: 'emulgiert', col: '#CDEB9A', life: 1 });
+    AU.sfx('drop');
   },
 };
 function gutUpdate(dt){
@@ -187,6 +215,7 @@ function gutUpdate(dt){
   for (const b of gut.balls){ b.trail.push([b.x, b.y]); if (b.trail.length > 12) b.trail.shift(); }
   gut.balls = gut.balls.filter(b => !b.done);
   for (const z of gut.cilia) z.fl = Math.max(0, z.fl - dt * 2.5);
+  for (let i = 0; i < gut.flash.length; i++) gut.flash[i] = Math.max(0, gut.flash[i] - dt * 1.2);
   for (let i = gut.pops.length - 1; i >= 0; i--){ const p = gut.pops[i]; p.life -= dt; p.y -= dt * 24; if (p.life <= 0) gut.pops.splice(i, 1); }
   if (gut.auto && gut.queue.length){ gut.autoT -= dt; if (gut.autoT <= 0 && gutDrop()) gut.autoT = 0.9; }
   if (gut.active && !gut.queue.length && !gut.transit.length && !gut.balls.length && !gut.pending) gutFinish();
@@ -204,12 +233,17 @@ function gutFrame(dt){
 }
 
 /* ---------- Zeichnen ---------- */
-function drawBrocken(c, k, x, y, scale = 1){
-  const T = gutType(k), r = T.r * scale;
+function drawBrocken(c, k, x, y, scale = 1, b = null){
+  const T = b ? b.T : gutType(k), r = (b ? b.r : T.r) * scale;
   c.fillStyle = T.col;
-  if (T.id === 'oel'){ c.beginPath(); c.moveTo(x, y - r * 1.5); c.bezierCurveTo(x + r * 1.1, y - r * 0.4, x + r, y + r, x, y + r); c.bezierCurveTo(x - r, y + r, x - r * 1.1, y - r * 0.4, x, y - r * 1.5); c.fill(); }
+  if (b && b.emul){ c.fillStyle = 'rgba(160,210,90,0.45)'; c.beginPath(); c.arc(x, y, r + 3, 0, 6.283); c.fill(); c.fillStyle = T.col; }
+  if (T.id === 'oel' && !(b && b.emul)){ c.beginPath(); c.moveTo(x, y - r * 1.5); c.bezierCurveTo(x + r * 1.1, y - r * 0.4, x + r, y + r, x, y + r); c.bezierCurveTo(x - r, y + r, x - r * 1.1, y - r * 0.4, x, y - r * 1.5); c.fill(); }
   else { c.beginPath(); c.arc(x, y, r, 0, 6.283); c.fill(); }
   if (T.id === 'kirsche'){ c.strokeStyle = '#4E0514'; c.lineWidth = 1.5; c.beginPath(); c.arc(x, y, r * 0.45, 0, 6.283); c.stroke(); }
+  if (T.id === 'pflaume'){ c.fillStyle = 'rgba(220,214,236,0.35)'; c.beginPath(); c.arc(x, y, r, 3.6, 5.6); c.lineTo(x, y); c.fill(); }   // Wachsreif
+  if (T.id === 'apfel'){ c.strokeStyle = 'rgba(150,110,40,0.5)'; c.lineWidth = 1.2; c.beginPath(); c.arc(x, y, r * 0.6, 0, 6.283); c.stroke(); }
+  if (T.id === 'kuerbis'){ c.strokeStyle = '#B35A12'; c.lineWidth = 1.2; for (const o of [-0.45, 0, 0.45]){ c.beginPath(); c.ellipse(x + o * r, y, r * 0.22, r * 0.9, 0, 0, 6.283); c.stroke(); } }
+  if (T.id === 'kern'){ c.strokeStyle = '#B8A57A'; c.lineWidth = 1; c.beginPath(); c.ellipse(x, y, r * 0.95, r * 0.6, 0.5, 0, 6.283); c.stroke(); }
   c.fillStyle = 'rgba(255,255,255,0.5)'; c.beginPath(); c.arc(x - r * 0.35, y - r * 0.35, r * 0.3, 0, 6.283); c.fill();
 }
 function drawCilium(c, z, t){
@@ -222,12 +256,13 @@ function drawCilium(c, z, t){
     const bx = z.x + Math.cos(a) * (R * 0.55), by = z.y + Math.sin(a) * (R * 0.55);
     const tx = z.x + Math.cos(a) * len, ty = z.y + Math.sin(a) * len;
     const mx = z.x + Math.cos(a + sway * 2) * len * 0.7, my = z.y + Math.sin(a + sway * 2) * len * 0.7;
-    c.strokeStyle = z.fl > 0.2 ? '#F2B64A' : '#C8665A'; c.lineWidth = 3.4;
+    c.strokeStyle = z.fl > 0.2 ? '#F2B64A' : z.bile ? '#6F9A3A' : '#C8665A'; c.lineWidth = 3.4;
     c.beginPath(); c.moveTo(bx, by); c.quadraticCurveTo(mx, my, tx, ty); c.stroke();
-    c.fillStyle = z.fl > 0.2 ? '#FFE08A' : '#FBE3D8'; c.beginPath(); c.arc(tx, ty, 2.8, 0, 6.283); c.fill();
+    c.fillStyle = z.fl > 0.2 ? '#FFE08A' : z.bile ? '#D9EFA8' : '#FBE3D8'; c.beginPath(); c.arc(tx, ty, 2.8, 0, 6.283); c.fill();
   }
   const grd = c.createRadialGradient(z.x - 5, z.y - 6, 2, z.x, z.y, R);
-  grd.addColorStop(0, z.fl > 0.2 ? '#FFE9B0' : '#F6C1B2'); grd.addColorStop(1, z.fl > 0.2 ? '#E8A45A' : '#C9685C');
+  if (z.bile && z.fl <= 0.2){ grd.addColorStop(0, '#CFE7A0'); grd.addColorStop(1, '#5E8A34'); }      // Gallen-Zilie: grün
+  else { grd.addColorStop(0, z.fl > 0.2 ? '#FFE9B0' : '#F6C1B2'); grd.addColorStop(1, z.fl > 0.2 ? '#E8A45A' : '#C9685C'); }
   c.fillStyle = grd; c.beginPath(); c.arc(z.x, z.y, R, 0, 6.283); c.fill();
   c.strokeStyle = hl ? '#FFFFFF' : 'rgba(90,30,24,0.6)'; c.lineWidth = hl ? 2.5 : 1.5; c.stroke();
 }
@@ -249,7 +284,7 @@ function drawWallHairs(c, t){                                   // Flimmerhärch
 function drawBottom(c, t){
   const { W, H, FLOOR, WALL } = GUT, y0 = FLOOR, hB = H - FLOOR;
   c.fillStyle = '#3A1B16'; c.fillRect(0, y0, W, hB);
-  for (const h of GUT.HOLES){
+  GUT.HOLES.forEach((h, hi) => {
     const w = h.x2 - h.x1, cx = (h.x1 + h.x2) / 2;
     if (h.id === 'dick'){
       c.fillStyle = '#6B3A2E'; c.beginPath(); c.roundRect(h.x1 + 2, y0, w - 4, hB - 4, [0, 0, 10, 10]); c.fill();
@@ -264,12 +299,12 @@ function drawBottom(c, t){
       c.strokeStyle = '#8A4FB3'; c.lineWidth = 7; c.beginPath(); c.moveTo(cx, y0 + 30); c.bezierCurveTo(cx + 4, y0 + 56, cx - 20, y0 + 50, cx - 16, y0 + 78); c.stroke();
     }
     if (h.x1 > WALL){ c.fillStyle = '#B5645A'; c.beginPath(); c.roundRect(h.x1 - 3, FLOOR - 24, 6, 30, 3); c.fill(); }
-    c.textAlign = 'center'; c.textBaseline = 'alphabetic'; c.fillStyle = h.mult > 1 ? '#FFF1D6' : '#D9BFB3';
+    const fl = gut.flash[hi];                                   // richtiger Ausgang: leuchtet auf
+    if (fl > 0){ c.fillStyle = `rgba(255,226,140,${0.55 * fl})`; c.beginPath(); c.roundRect(h.x1 + 2, y0 - 30 * fl, w - 4, hB + 30 * fl, 10); c.fill(); }
+    c.textAlign = 'center'; c.textBaseline = 'alphabetic'; c.fillStyle = fl > 0.3 ? '#FFF1D6' : '#D9BFB3';
     const narrow = w < 60;
-    c.font = `800 ${narrow ? 11 : 13}px "Bricolage Grotesque", system-ui, sans-serif`; c.fillText('×' + fmt(h.mult), cx, y0 + 22);
-    c.font = `700 ${narrow ? 8 : 10}px "Bricolage Grotesque", system-ui, sans-serif`; c.fillText(h.name, cx, y0 + 38 + (h.id === 'blind' ? 16 : 0));
-    if (h.sub){ c.font = '600 9px "Bricolage Grotesque", system-ui, sans-serif'; c.fillText(h.sub, cx, y0 + 51); }
-  }
+    c.font = `700 ${narrow ? 8 : 10}px "Bricolage Grotesque", system-ui, sans-serif`; c.fillText(h.name, cx, y0 + 26 + (h.id === 'blind' ? 16 : 0));
+  });
 }
 function drawGut(){
   const c = gctx, t = gut.t, { W, H, PF_Y, FLOOR } = GUT, px = gut.pfX;
@@ -332,13 +367,13 @@ function drawGut(){
   if (gut.queue.length || gut.transit.length){ c.setLineDash([3, 6]); c.strokeStyle = 'rgba(255,255,255,0.35)'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(px, PF_Y + 12); c.lineTo(px, FLOOR); c.stroke(); c.setLineDash([]); }
   for (const z of gut.cilia) drawCilium(c, z, t);
   for (const b of gut.balls){
-    c.strokeStyle = b.T.col; c.globalAlpha = 0.25; c.lineWidth = b.T.r * 0.8; c.lineCap = 'round'; c.beginPath(); b.trail.forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y)); c.stroke(); c.globalAlpha = 1;
-    drawBrocken(c, b.k, b.x, b.y);
+    c.strokeStyle = b.T.col; c.globalAlpha = 0.25; c.lineWidth = b.r * 0.8; c.lineCap = 'round'; c.beginPath(); b.trail.forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y)); c.stroke(); c.globalAlpha = 1;
+    drawBrocken(c, b.k, b.x, b.y, 1, b);
     c.font = '800 12px "Bricolage Grotesque", system-ui, sans-serif'; c.textAlign = 'center'; c.lineWidth = 3; c.strokeStyle = 'rgba(70,20,16,0.8)';
-    c.strokeText(b.got, b.x, b.y - b.T.r - 8); c.fillStyle = '#FFF4E0'; c.fillText(b.got, b.x, b.y - b.T.r - 8);
+    c.strokeText(b.got, b.x, b.y - b.r - 8); c.fillStyle = '#FFF4E0'; c.fillText(b.got, b.x, b.y - b.r - 8);
   }
   for (const p of gut.pops){
-    c.globalAlpha = Math.min(1, p.life * 2); c.font = `800 ${p.big ? 17 : 15}px "Bricolage Grotesque", system-ui, sans-serif`; c.textAlign = 'center';
+    c.globalAlpha = Math.min(1, p.life * 2); c.font = `800 ${p.huge ? 24 : p.big ? 17 : 15}px "Bricolage Grotesque", system-ui, sans-serif`; c.textAlign = 'center';
     c.lineWidth = 4; c.strokeStyle = 'rgba(70,20,16,0.85)'; c.strokeText(p.txt, p.x, p.y); c.fillStyle = p.col; c.fillText(p.txt, p.x, p.y);
   }
   c.globalAlpha = 1;
@@ -364,12 +399,22 @@ function renderGutLive(){
   $('gutSkip').textContent = gut.auto && gut.queue.length ? 'Automatisch läuft …' : 'Rest automatisch einwerfen';
   $('gutHint').textContent = gut.finished && gut.n0
     ? 'Fertig verdaut. Deine Stellung bleibt gespeichert.'
-    : 'Zilien und Pförtner anfassen und ziehen. Klick auf den Magen (oder Leertaste) wirft den markierten Brocken ein. Jede Zilie gibt einem Brocken höchstens 3, 2, 1 Punkte. Unten zählt der Ausgang als Bonus. Gleiche Frucht und gleiche Stellung ergeben immer denselben Weg.';
+    : 'Zilien und Pförtner anfassen und ziehen. Klick auf den Magen (oder Leertaste) wirft den markierten Brocken ein. Jede Zilie gibt einem Brocken höchstens 3, 2, 1 Punkte. Jede Frucht wird an einem anderen Ausgang am besten aufgenommen: Finde ihn heraus. Gleiche Frucht und gleiche Stellung ergeben immer denselben Weg.';
   for (const b of document.querySelectorAll('#gutUpg [data-gbuy]')) b.disabled = !canBuy(U[b.dataset.gbuy]);
+}
+/* Entdeckte Ausgänge: je Frucht, die schon frei ist, der richtige Ausgang oder "?" */
+function foundHtml(){
+  const F = save.gutFound || {};
+  const rows = WORLDS.slice(0, save.unlocked).map((w, i) => {
+    const T = gutType(i), h = F[T.id];
+    return h ? `<div class="found"><b>${T.name} → ${HOLE_NAMES[h]}</b><span class="note">${GUT.FACT[T.id]}</span></div>`
+      : `<div class="found"><b>${T.name} → ?</b></div>`;
+  }).join('');
+  return `<h2>Ausgänge</h2><div class="foundlist">${rows}</div>`;
 }
 function renderGutPanel(){
   const list = UPG.filter(u => u.gut && visible(u));
-  $('gutUpg').innerHTML = '<h2>Darm-Upgrades</h2>' + list.map(u => {
+  $('gutUpg').innerHTML = foundHtml() + '<h2>Darm-Upgrades</h2>' + list.map(u => {
     const l = lv(u.id), maxed = l >= u.max, c = costOf(u);
     return `<div class="gcard"><div class="ghead"><b>${u.name}</b><span class="note">${l}/${u.max}</span></div>
       <p class="note">${u.desc}</p>
@@ -380,7 +425,7 @@ function renderGutPanel(){
     const u = U[b.dataset.gbuy];
     if (!canBuy(u)){ AU.sfx('nope'); return; }
     buy(u);
-    if (gut.cilia.length !== S.gutCilia) applyLayout(gutFitLayout(snapshot(), S.gutCilia), false);   // neue Zilie erscheint an freier Stelle
+    if (gut.cilia.length !== S.gutCilia + (S.gutBile ? 1 : 0)) applyLayout(gutFitLayout(snapshot(), S.gutCilia, S.gutBile), false);   // neue Zilie erscheint an freier Stelle
     storeLayout(); renderGutPanel();
   };
   renderGutLive();

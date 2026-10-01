@@ -7,7 +7,8 @@ const SAVE_KEY = 'caterpillage.save.v3', OLD_KEYS = ['caterpillage.save.v2', 'ca
 const freshSave = () => ({ v: 3, cur: {}, lv: {}, runs: [0, 0, 0, 0, 0, 0], unlocked: 1, world: 0,
   abil: { own: {}, from: {}, active: null, passive: null }, choice: null, best: {}, last: null, spOff: {},
   gut: { p: [] },                           // Magen: Portionen { w, n, x } (Nährstoffe normal und aus Zuckerkristallen)
-  gutLay: null });                          // Darm-Stellung { pf, z: [[x, y]], per: { Welt: { pf, z } } }
+  gutLay: null,                             // Darm-Stellung { pf, z: [[x, y]], g: [x, y] (Gallen-Zilie), per: { Welt: { pf, z, g } } }
+  gutFound: {} });                          // entdeckte richtige Ausgänge je Brockenart { oel: 'lymph' }
 let save = freshSave();
 const cur = (w, t) => save.cur[w + t] || 0;
 const addCur = (w, t, x) => { save.cur[w + t] = cur(w, t) + x; };

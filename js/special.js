@@ -2,7 +2,7 @@
 /* =====================================================================
    Sonderstellen: Jede Frucht bekommt genau eine Art (Saftblase, Zuckerkristall
    oder Faulstelle), zufällig gezogen, davon mehrere Stück. Sie liegen als
-   Schicht 4 im Raster; W.layers[4] wird pro Frucht aus der Wirtsschicht
+   Schicht SPK im Raster; W.layers[SPK] wird pro Frucht aus der Wirtsschicht
    (W.spHost) abgeleitet.
    ===================================================================== */
 const SP = { kind: null, def: null, items: [], host: 2 };
@@ -12,12 +12,12 @@ const hexRgb = h => [1, 3, 5].map(o => parseInt(h.substr(o, 2), 16));
 function mixCol(i, to, a){                                   // Pixelfarbe Richtung "to" mischen
   for (let c = 0; c < 3; c++) col[i*3+c] = col[i*3+c] * (1 - a) + to[c] * a;
 }
-/* Pixel i auf Schicht 4 umstellen (Härte und Zählung neu) */
+/* Pixel i auf die Sonderstellen-Schicht umstellen (Härte und Zählung neu) */
 function toSpecial(i, n){
   totals[type[i]]--;
-  type[i] = 4;
-  hpMax[i] = hp[i] = W.layers[4].hp * (0.88 + 0.24 * n);
-  totals[4]++;
+  type[i] = SPK;
+  hpMax[i] = hp[i] = W.layers[SPK].hp * (0.88 + 0.24 * n);
+  totals[SPK]++;
 }
 
 const spHostOf = kind => (W.spHosts && W.spHosts[kind]) || W.spHost;
@@ -37,7 +37,7 @@ function genSpecial(){
   const over = (W.spOver && W.spOver[pick]) || {}, hk = spHostOf(pick);
   const def = Object.assign({}, SPECIAL[pick], over);             // z. B. Walnuss: Öltropfen statt Saftblase
   SP.kind = pick; SP.def = def; SP.host = hk;
-  W.layers[4] = Object.assign(def.layer(W.layers[hk], W), { name: def.name }, over.L || {});
+  W.layers[SPK] = Object.assign(def.layer(W.layers[hk], W), { name: def.name }, over.L || {});
   const count = def.n[0] + Math.floor(Math.random() * (def.n[1] - def.n[0] + 1));
   if (pick === 'faul') return genRot(count, def);
 
@@ -151,7 +151,7 @@ function spItemAt(i){
   for (const b of SP.items){ const d = Math.hypot(px - b.x, py - b.y) - b.r; if (d < bd){ bd = d; best = b; } }
   return best;
 }
-/* Wird aus removePixel aufgerufen, wenn ein Pixel der Schicht 4 verschwindet */
+/* Wird aus removePixel aufgerufen, wenn ein Pixel der Sonderstellen-Schicht verschwindet */
 function specialEaten(i){
   const b = spItemAt(i);
   if (b) b.left--;
@@ -161,8 +161,8 @@ function popBubble(b){
   b.popped = true;
   let n = 1;                                                 // der angebissene Pixel zählt mit
   disc(b.x, b.y, b.r * 1.6 + 1, j => {
-    if (type[j] !== 4 || spItemAt(j) !== b) return;
-    type[j] = 0; D[j*4+3] = 0; eaten[4]++; run.left--; n++; b.left--;
+    if (type[j] !== SPK || spItemAt(j) !== b) return;
+    type[j] = 0; D[j*4+3] = 0; eaten[SPK]++; run.left--; n++; b.left--;
   });
   meter(SP.def.name).px += n - 1;
   const hL = W.layers[SP.host], cur = hL.f ? 'f' : 'k';          // Öltropfen im Nusskern bringen Kernwährung
@@ -253,5 +253,5 @@ function spSummary(){
   if (!SP.def) return null;
   const n = SP.items.length;
   if (SP.kind === 'blase') return { label: SP.def.plural, val: `${run.spDone} / ${n} geplatzt` };
-  return { label: SP.def.plural, val: Math.round(pctOf(4)) + ' %' };
+  return { label: SP.def.plural, val: Math.round(pctOf(SPK)) + ' %' };
 }
