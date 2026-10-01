@@ -11,7 +11,7 @@ function startRun(){
   genSpecial();
   finishFruit();
   Object.assign(run, { active: true, over: false, endT: 0, shown: false, stamina: S.stamina, max: S.stamina,
-    f: 0, k: 0, bites: 0, crits: 0, broke: false, hardStreak: 0, touched: {}, moving: false,
+    f: 0, fx: 0, k: 0, bites: 0, crits: 0, broke: false, hardStreak: 0, touched: {}, moving: false,
     charge: 1, rauschT: 0, dash: 0, proj: null, pool: null, beamT: 0, beamTick: 0, beamEnd: null, beamAcc: 0,
     molted: false, moltT: 0, sog: 0, sogCycle: 0, hairT: 0, hairFx: 0, clean: false, left: totals[1] + totals[2] + totals[3] + totals[4], spDone: 0, spT: SP.def ? 2.6 : 0, dropSnd: 0,
     time: 0, spent: 0, warn: 0, sogGain: 0, m: {}, gF: 0, gK: 0, gT: 0 });
@@ -37,11 +37,12 @@ function endRun(quick = false){                            // quick: aus dem Pau
   if (!test){
     addCur(WI, 'f', run.f);
     addCur(WI, 'k', run.k);
+    run.portion = stomachAdd(WI, run.f, run.fx);            // ein Teil geht zusätzlich als Nahrungsbrei in den Magen
     save.runs[WI]++;
     const b = save.best[WI] || (save.best[WI] = { 1: 0, 2: 0, 3: 0 });
     for (const k in p) b[k] = Math.max(b[k], p[k]);
   }
-  save.last = { w: WI, f: run.f, k: run.k, bites: run.bites, crits: run.crits, broke: run.broke, clean: run.clean, p, sp, test };
+  save.last = { w: WI, f: run.f, fx: run.fx, portion: !!run.portion, k: run.k, bites: run.bites, crits: run.crits, broke: run.broke, clean: run.clean, p, sp, test };
   persist();
 }
 
@@ -58,11 +59,19 @@ function showEnd(){
   if (L.sp) rows.push([L.sp.label, L.sp.val]);
   if (L.crits) rows.push(['Kritische Bisse', L.crits]);
   if (L.test) rows.push(['Testlauf', 'nicht gutgeschrieben']);
+  else rows.push(['Magen', (L.portion ? '+1 Portion' : stomachFull() ? 'voll' : 'nichts dazu') + ` (${save.gut.p.length}/${S.gutCap})`]);
   $('endStats').innerHTML = rows.map(([a, b]) => `<span>${a}</span><span>${b}</span>`).join('');
   $('endMeter').hidden = !(adm.on && adm.meter);
   if (!$('endMeter').hidden) $('endMeter').innerHTML = meterHtml();
   $('endBox').hidden = false;
-  $('toShop').focus();
+  const full = stomachFull();
+  $('toGut').hidden = !!L.test || stomachEmpty();
+  $('toGut').textContent = full ? `Magen voll: verdauen` : `Verdauen (${save.gut.p.length}/${S.gutCap})`;
+  $('toGut').classList.toggle('primary', full);
+  $('endNext').classList.toggle('primary', !full);
+  if ($('toGut').hidden){ $('endNext').focus(); return; }
+  if (!full){ $('endNext').focus(); return; }
+  $('toGut').focus();
 }
 
 const smooth = x => x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x);

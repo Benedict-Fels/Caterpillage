@@ -26,7 +26,12 @@ const frac = x => x - Math.floor(x);
 function genSpecial(){
   SP.items = []; drops.length = 0;
   const kinds = W.spKinds || Object.keys(SPECIAL);
-  let pick = adm.on && adm.sp ? adm.sp : kinds[Math.floor(Math.random() * kinds.length)];
+  let pick = adm.on && adm.sp ? adm.sp : 'none';
+  if (!(adm.on && adm.sp)){                                    // nach freigeschalteten Upgrades gewichtet
+    const P = spChances();
+    let x = Math.random();
+    for (const k of kinds){ x -= P[k] || 0; if (x < 0){ pick = k; break; } }
+  }
   if (pick !== 'none' && !kinds.includes(pick)) pick = kinds[0];     // erzwungene Art gibt es hier nicht
   if (pick === 'none'){ SP.kind = null; SP.def = null; return; }
   const over = (W.spOver && W.spOver[pick]) || {}, hk = spHostOf(pick);

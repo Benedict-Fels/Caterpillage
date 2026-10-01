@@ -238,3 +238,34 @@ fieldset label.rng{align-items:center}
 .agrid label.nm{display:flex;gap:6px;align-items:center;font-weight:700}
 .agrid .arow{align-items:flex-end}
 .agrid label.nm small{font-weight:400}
+
+/* ===== Magen und Darm ===== */
+.endrow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.endrow button{padding:8px 6px;white-space:nowrap}
+.stomach{border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:14px}
+.stomach .meter-head{font-size:13px;color:var(--mute);margin-bottom:4px}
+.stomach .smoney{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:20px;font-weight:800;font-variant-numeric:tabular-nums}
+.stomach .smoney .ic{width:22px;height:22px}
+.stomach button.wide{margin-top:10px}
+#gcv{width:100%;height:auto;max-height:76vh;object-fit:contain;cursor:ew-resize}
+.gutstage .hudtop{min-height:54px}
+.gutstage .hudtop .note{font-size:14px}
+#gut .runaside .stats{margin-bottom:4px}
+.gutupg{margin-top:16px;border-top:1px solid var(--line);padding-top:12px;display:grid;gap:10px}
+.gutupg h2{margin-bottom:0}
+.gcard{border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.gcard .ghead{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.gcard .ghead b{font-size:15px}
+.gcard p{margin-top:4px}
+.gcard .change{font-size:13px;margin-top:6px}
+.gcard button.wide{margin-top:8px;padding:7px 10px;font-size:14px}
+#gutShop{margin-top:16px}
+#gutRun{margin-top:8px}
+.gcard .change{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 6px;font-weight:600;font-variant-numeric:tabular-nums}
+.gcard .change .arrow{color:var(--mute)}
+.gcard .change .next{color:var(--accent)}
+.pdots{display:flex;gap:6px;margin:4px 0 6px}
+.pdot{width:18px;height:18px;border-radius:50%;border:2px dashed var(--line)}
+.pdot.on{border:2px solid color-mix(in srgb, var(--ink) 25%, transparent)}
+.res.rausch{color:#C77A00}
+#gcv{cursor:pointer}

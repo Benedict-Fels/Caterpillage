@@ -62,6 +62,10 @@ function renderAdmin(){
   });
   h += `<div class="arow"><button data-a="add1">Alles +10 Tsd.</button><button data-a="add2">Alles +1 Mio.</button><button data-a="zero">Alles auf 0</button></div></div>`;
 
+  h += `<div class="asec"><h3>Magen</h3><div class="arow"><span class="note">${save.gut.p.length} / ${S.gutCap} Portionen${save.gut.p.length ? ': ' + save.gut.p.map(p => WORLDS[p.w].name + ' ' + fmtInt(p.n + p.x)).join(', ') : ''}</span></div>
+    <div class="arow"><button data-a="gut1">Magen füllen (je 100 Nährstoffe)</button><button data-a="gutx">+1 Portion mit Zucker</button><button data-a="gut0">Magen leeren</button><button data-a="gutnow">Sofort verdauen</button></div>
+    <p class="note">Füllen legt Portionen der freigeschalteten Welten abwechselnd bis zum Fassungsvermögen hinein. Sofort verdauen nutzt dieselbe Physik wie der Darm, nur ohne Zeichnen, mit der gespeicherten Stellung.</p></div>`;
+
   h += `<div class="asec"><h3>Welten</h3>`;
   WORLDS.forEach((w, i) => {
     const open = i < save.unlocked, here = save.world === i;
@@ -106,7 +110,7 @@ function renderAdmin(){
     <div class="arow"><label>Bisskraft × <input class="sm" type="number" min="0.1" step="0.5" data-num="pow" value="${adm.pow}"></label>
       <label>Biss-Takt × <input class="sm" type="number" min="0.1" step="0.25" data-num="rate" value="${adm.rate}"></label>
       <label>Spieltempo × <input class="sm" type="number" min="0.1" max="8" step="0.25" data-num="speed" value="${adm.speed}"></label></div>
-    <div class="arow"><label>Sonderstelle <select data-sp>${[['', 'zufällig'], ...Object.entries(SPECIAL).map(([k, d]) => [k, d.name]), ['none', 'keine']]
+    <div class="arow"><label>Sonderstelle <select data-sp>${[['', 'nach Upgrades'], ...Object.entries(SPECIAL).map(([k, d]) => [k, d.name]), ['none', 'keine']]
       .map(([k, n]) => `<option value="${k}" ${(adm.sp || '') === k ? 'selected' : ''}>${n}</option>`).join('')}</select></label><span class="note">gilt ab dem nächsten Run</span></div>
     <p class="note">Messwerte zeigen je Quelle (Biss, Brennhaare, Spucke …) den Schaden ohne Überschuss, DPS, gefressene Pixel und Ertrag – so lässt sich vergleichen, wie stark eine Fähigkeit wirklich ist.</p></div>`;
 
@@ -152,6 +156,10 @@ function renderAdmin(){
     if (a === 'nochoice') save.choice = null;
     if (a === 'add1' || a === 'add2') WORLDS.forEach((w, i) => { addCur(i, 'f', a === 'add1' ? 1e4 : 1e6); addCur(i, 'k', a === 'add1' ? 1e4 : 1e6); });
     if (a === 'zero') save.cur = {};
+    if (a === 'gut1') for (let i = 0; save.gut.p.length < S.gutCap; i++) save.gut.p.push({ w: i % save.unlocked, n: 100, x: 0 });
+    if (a === 'gutx') save.gut.p.push({ w: save.world, n: 100, x: 60 });
+    if (a === 'gut0') save.gut = { p: [] };
+    if (a === 'gutnow') digestAll();
     if (a === 'worlds') setWorlds(WORLDS.length);
     if (a === 'worlds1') setWorlds(1);
     if (a === 'upmax') for (const u of UPG) if (!u.ab) save.lv[u.id] = u.max;

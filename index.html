@@ -109,7 +109,8 @@
             <div class="gain" id="endGain"></div>
             <div class="stats" id="endStats"></div>
             <div class="meter" id="endMeter" hidden></div>
-            <button class="wide primary" id="toShop">Zu den Upgrades</button>
+            <button class="wide primary" id="toGut">Verdauen</button>
+            <div class="endrow"><button id="endNext">Noch ein Run</button><button id="toShop">Upgrades</button></div>
           </div>
         </div>
       </div>
@@ -132,6 +133,25 @@
     </aside>
   </section>
 
+  <!-- ===== Darm ===== -->
+  <section id="gut" class="cols" hidden>
+    <div>
+      <div class="stage gutstage">
+        <div class="hudtop" id="gutTop"></div>
+        <div class="cvwrap"><canvas id="gcv" width="720" height="880" aria-label="Darm: Brocken fallen durch die Zotten"></canvas></div>
+      </div>
+      <div class="hint" id="gutHint">Lenke den Pförtner oben mit Maus, Finger oder den Pfeiltasten. Jede Zotte, die ein Brocken berührt, macht ihn wertvoller.</div>
+    </div>
+    <aside class="panel runaside">
+      <h2>Darm</h2>
+      <div class="stats" id="gutStats"></div>
+      <button class="wide" id="gutSkip">Rest sofort verdauen</button>
+      <div class="gutupg" id="gutUpg"></div>
+      <button class="wide primary" id="gutShop">Zu den Upgrades</button>
+      <button class="wide go" id="gutRun">Nächster Run</button>
+    </aside>
+  </section>
+
   <!-- ===== Upgrades ===== -->
   <section id="shop" hidden>
     <div class="cols">
@@ -140,6 +160,7 @@
       </div>
       <aside class="panel">
         <div class="bank" id="bank"></div>
+        <div class="stomach" id="stomach"></div>
         <div id="detail"></div>
         <button class="wide go" id="nextRun">Nächster Run</button>
         <div class="lastrun note" id="lastRun"></div>
@@ -161,6 +182,7 @@
 </div>
 
 <script src="js/util.js"></script>
+<script src="js/gut.js"></script>
 <script src="js/data.js"></script>
 <script src="js/save.js"></script>
 <script src="js/songs.js"></script>
@@ -174,6 +196,7 @@
 <script src="js/draw.js"></script>
 <script src="js/shop.js"></script>
 <script src="js/screens.js"></script>
+<script src="js/darm.js"></script>
 <script src="js/admin.js"></script>
 <script src="js/input.js"></script>
 <script src="js/main.js"></script>

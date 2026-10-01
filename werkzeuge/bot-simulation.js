@@ -2,7 +2,8 @@
 // Aufruf aus dem Projektordner:  node werkzeuge/bot-simulation.js . 100 '{"abil":["fressrausch","saftsog"]}'
 // Optionen (JSON): abil = feste Fähigkeiten nach Welt 1 und 2; sp = Sonderstellen zuerst ansteuern;
 // eval = JS vor dem Start, z. B. "WORLDS[2].drain=2" oder "adm.on=true;adm.sp='none'";
-// stopAt = aufhören, sobald diese Welt frei ist.
+// stopAt = aufhören, sobald diese Welt frei ist; noDigest = nie verdauen (zum Vergleich mit dem Spiel ohne Darm);
+// randomPf = Pförtner zufällig statt an der besten Stelle.
 // Ausgabe: eine Zeile pro Run (Welt, Sonderstelle, deren Ertrag spF, Dauer, Ertrag, % je Schicht).
 const { chromium } = require('playwright');
 const path = require('path');
@@ -22,7 +23,7 @@ const over = process.argv[4] || '{}';
     if (O.eval) eval(O.eval);                     // Parameter-Überschreibungen
     const cp = window.__cp; cp.dev.manual = true;
     localStorage.clear(); cp.save = JSON.parse(JSON.stringify({ v: 3, cur: {}, lv: {}, runs: [0,0,0,0,0,0], unlocked: 1, world: 0,
-      abil: { own: {}, from: {}, active: null, passive: null }, choice: null, best: {}, last: null }));
+      abil: { own: {}, from: {}, active: null, passive: null }, choice: null, best: {}, last: null, spOff: {}, gut: { p: [] } }));
     ctrl.mode = 'mouse';
     const log = [];
     let totalT = 0;
@@ -53,8 +54,13 @@ const over = process.argv[4] || '{}';
       }
       const spF = SP.kind === 'blase' ? (run.m['Saftblase'] ? run.m['Saftblase'].f : 0) : SP.kind ? eaten[4] * W.layers[4].f * S.yieldW[WI] : 0;
       const L = cp.save.last;
+      // verdauen, sobald der Magen voll ist (gleiche Physik, Pförtner pendelt); gut = Ertrag aus dem Darm
+      // Pförtner wie ein ordentlicher Spieler: je Frucht die beste Stelle für die Grundstellung der Zilien
+      const bestPf = {};
+      const pick = (k, L) => { if (bestPf[k] === undefined){ let bx = L.pf, bp = -1; for (let x = 24; x <= 456; x += 8){ const p = gutSimulate(k, x, L.z).points; if (p > bp){ bp = p; bx = x; } } bestPf[k] = bx; } return bestPf[k]; };
+      const gut = O.noDigest || cp.save.gut.p.length < cp.S.gutCap ? 0 : Math.round(Object.values(cp.digestAll(O.randomPf ? (k, L) => 24 + Math.random() * 432 : pick)).reduce((a, b) => a + b, 0));
       totalT += t;
-      console.log(JSON.stringify({ n, w: L.w, sp: SP.kind, spF: Math.round(spF), t: +t.toFixed(1), f: Math.round(L.f), k: +L.k.toFixed(1), p: [1,2,3].map(k => Math.round(L.p[k])) }));
+      console.log(JSON.stringify({ n, w: L.w, gut, sp: SP.kind, spF: Math.round(spF), t: +t.toFixed(1), f: Math.round(L.f), k: +L.k.toFixed(1), p: [1,2,3].map(k => Math.round(L.p[k])) }));
       log.push({ n, w: L.w, t: +t.toFixed(1), brokeT: brokeT && +brokeT.toFixed(1), f: Math.round(L.f), k: +L.k.toFixed(1), p: [1,2,3].map(k => Math.round(L.p[k])), clean: L.clean, stam: cp.S.stamina, rate: +cp.S.rate.toFixed(2), pow: +cp.S.power.toFixed(1) });
       // einkaufen: immer das Billigste (in Fruchtwährung der eigenen Welt normiert)
       for (let g = 0; g < 200; g++){

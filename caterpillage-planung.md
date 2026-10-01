@@ -355,6 +355,153 @@ Bot (Fressrausch + Saftsog): Durchbruch Johannisbeere Run 2–3, Kerne ab Run 4 
 
 **Warum weniger Runs bis zur Kirsche (Stufe 11)?** Bot mit und ohne Sonderstellen verglichen: Ohne Sonderstellen 12 / 30–31 Runs (Kirsche / Walnuss), mit Sonderstellen, aber ohne sie anzusteuern, ebenfalls 12 / 30–31. Der Unterschied zu vorher (14–15 Runs) kommt also allein vom neuen Biss: Die Beerenkerne werden jetzt stetig abgeknabbert statt erst nach vielen Bissen auf einmal, und nichts geht mehr verloren, wenn der Run endet. Wer die Sonderstellen gezielt ansteuert, ist noch schneller (Kirsche nach 9 Runs, Walnuss nach 18–21), weil er deutlich mehr Fruchtwährung für Upgrades bekommt; die Sonderstellen machen dann 33–44 % des Ertrags in Johannisbeere und Kirsche aus.
 
+## Umsetzung Stufe 13: Sonderstellen über Upgrades
+
+Entscheidung Bene: Sonderstellen werden über Upgrades freigeschaltet, manche Früchte haben keine, die Häufigkeit lässt sich hochrüsten, Faulstellen (bringen weniger als die Schale, die sie ersetzen) lassen sich ausschalten.
+
+- Drei Knoten im Ast Verdauung, als Kette auf der rechten Seite, je 5 Stufen, Kosten × 1,8 je Stufe:
+
+| Knoten | Welt / Währung | Start­kosten | Freischaltung |
+|---|---|---|---|
+| Faulstellen | Johannisbeere, Beerensaft | 120 | Verdauung 2 |
+| Zuckerkristalle | Kirsche, Kirschsaft | 250 | Faulstellen 1 |
+| Saftblasen (Walnuss: Öltropfen) | Walnuss, Nussholz | 300 | Zuckerkristalle 1 |
+
+- **Häufigkeit:** Jede Art hat das Gewicht ihrer Stufe, "keine Sonderstelle" hat das feste Gewicht 3 (`SP_NONE`). Beispiele: nur Faulstellen 1 → 25 % der Früchte; alle drei auf 1 → je 17 %, 50 % ohne; alle auf 5 → je 28 %, 17 % ohne. Selten zu Beginn, später gleich verteilt. Der Knoten zeigt "jetzt → danach" als Anteil der Früchte.
+- **Ausschalten:** Jeder freigeschaltete Sonderstellen-Knoten hat im Upgrade-Screen einen Knopf "… ausschalten / einschalten" (gespeichert in `save.spOff`); im Baum steht dann "(aus)". Gilt für alle drei Arten, gebraucht wird es vor allem für die Faulstellen.
+- Alle Welten können alle drei Arten haben (die Einschränkung der Walnuss ist weg, dort Öltropfen statt Saftblasen).
+- Beschriftung der Welt-Ringe im Baum nach links unten verlegt (sonst überdeckt vom Kristall-Knoten).
+- Admin: Sonderstelle "nach Upgrades" (Standard) oder eine Art bzw. "keine" erzwingen.
+
+Bot: Kirsche nach 13 Runs, Walnuss nach 32–33, Walnuss geknackt nach ~17 Walnuss-Runs. In der Johannisbeere hat der Bot fast nie Sonderstellen, weil er die Faulstellen erst spät kauft.
+
+## Umsetzung Stufe 14: Gleichmäßige Stufen bei Sonderstellen, Krit aufgeteilt
+
+- **Sonderstellen:** Jede Stufe bringt fest **+5 % der Früchte** (`SP_STEP`), 5 Stufen, also bis 25 % je Art. Alle drei voll ausgebaut: 75 % mit, 25 % ohne Sonderstelle. Ausgeschaltete Arten zählen 0, ihr Anteil geht an "keine" (ersetzt die Gewichtung aus Stufe 13).
+- **Krit aufgeteilt** in Chance und Schaden, jeweils 5 Stufen:
+
+| Welt | Krit-Chance | Krit-Schaden |
+|---|---|---|
+| Johannisbeere | Kritischer Biss: +1 % je Stufe (bis 5 %) | – (Grundschaden 150 %) |
+| Kirsche | Krit-Chance II: +1 % je Stufe | Krit-Schaden II: +5 % je Stufe (bis +25 %) |
+| Walnuss | Krit-Chance III: +1 % je Stufe | Krit-Schaden III: +5 % je Stufe |
+
+  Maximal 15 % Chance und 200 % Schaden (vorher 30 % und 300 %). Die Chance-Knoten bleiben links am Kiefer-Ast, die Schaden-Knoten hängen rechts an "Scharfe Mandibeln" (Stufe 1). Vorhandene Stufen von Krit/Krit II/Krit III bleiben erhalten, wirken aber nur noch auf die Chance.
+- Der schwächere Krit machte die Walnuss deutlich zäher (Knacken nach 12–14 statt ~7 min). Ausgleich: **Holzschale Härte 220** (vorher 270). Bot danach: Kirsche nach 13 Runs, Walnuss nach 33–34, Walnuss geknackt nach 5–7 min.
+
+## Umsetzung Stufe 15: Magen und Darm (Plinko), Grundversion (ersetzt durch Stufe 16)
+
+Rückmeldung Bene nach dem Anspielen: zu viele Bälle auf einmal, kein Überblick, am Ende nur ein Durchschnittswert. Außerdem wurde der Darm als Pflicht-Station bei 10 Früchten zur Maut. Neu gedacht in Stufe 16.
+
+Idee Bene (29.09.2026): Nahrungsaufnahme als eigene kleine Mechanik. Ablauf **Fressen → Magen → Darm-Plinko**, ohne Neustart und ohne Prestige. Man kann mehrere Runs hintereinander fressen und erst dann verdauen. Das Plinko soll Spaß machen und darf dauern; wer viel frisst, bekommt viele Brocken.
+
+- **Magen:** Die Fruchtwährung eines Runs wird nicht mehr direkt gutgeschrieben, sondern landet im Magen (`save.gut`, je Welt; Anteil aus Zuckerkristallen getrennt). Die **Kernwährung geht weiter direkt** aufs Konto, damit das Freischalten der Welten unberührt bleibt. Ergebnis-Fenster: "Verdauen (n Brocken)", "Noch ein Run", "Upgrades". Im Upgrade-Screen zeigt ein Kasten, was im Magen liegt.
+- **Darm-Screen** (`js/gut.js` Physik ohne Seite, `js/darm.js` Screen): Der Magen gibt die Brocken durch den **Pförtner** in den Darm. Den Pförtner lenkt man mit Maus, Finger oder Pfeiltasten/A/D, sonst pendelt er. Jede **Zotte**, die ein Brocken berührt, gibt +x % auf seinen Wert (leuchtet, wackelt, Ton steigt mit jeder Berührung). Unten 7 **Schalen** ×0,5 · ×0,85 · ×1,1 · ×0,85 · ×1,1 · ×0,85 · ×0,5 (außen Ausscheidung). Brocken stoßen sich gegenseitig an. "Rest sofort verdauen" rechnet den Rest mit derselben Physik ohne Zeichnen.
+- **Zahl der Brocken** = 3 · √Menge (höchstens 2500), Kristall-Brocken 0,8 · √Menge. 500 Beerensaft ≈ 67 Brocken, 5.000 ≈ 212.
+- **Zucker-Kristall-Brocken:** größer, bernsteinfarben, zerbrechen an den ersten beiden Zotten in zwei Hälften, die getrennt weiter Zotten sammeln (im Schnitt 5–12 % mehr als normale Brocken).
+- **Lücken:** Am Anfang fehlen Zotten (nie in der obersten Reihe, nie am Rand, nie zwei übereinander, sonst entsteht ein freier Schacht, der ohne Berührung in eine gute Schale führt).
+- **Darm-Upgrades** (stehen im Darm-Screen, nicht im Baum, wirken für alle Früchte):
+
+| Knoten | Welt / Währung | Wirkung | Stufen, Kosten |
+|---|---|---|---|
+| Enzyme (aus dem Baum verschoben) | Johannisbeere | +5 % je Zotte, +2 %-Punkte je Stufe (bis +25 %) | 10, 300 × 1,75 |
+| Zottenwuchs | Johannisbeere | Lücken 40 % → 0 %, 42 → 53 Zotten bei 7 Reihen | 5, 200 × 1,9 |
+| Peristaltik | Johannisbeere | 3 → 12 Brocken/s (Komfort, kein Ertrag) | 9, 25 × 1,55 |
+| Darmschlinge | Kirsche | 7 → 10 Zottenreihen | 3, 300 × 2,2 |
+
+- **Balance:** Enzyme wirkten vorher nur in der Johannisbeere (+30 % je Stufe, bis ×7 zusammen mit Verdauung). Der Darm bringt am Anfang im Schnitt **×1,0** (kalibriert mit pendelndem Pförtner, ~4,8 Berührungen je Brocken). Mit Enzyme 10 etwa ×1,7, damit kommt die Johannisbeere wieder auf rund ×7. Alles voll ausgebaut etwa ×2,5, für alle Früchte (Eskalation; kostet viel Beerensaft, also Zurückkehren). Gezieltes Lenken bringt je nach Brett 5–20 % mehr als das Pendeln.
+- Admin: Abschnitt "Magen" (füllen, Kristall-Brocken, leeren, sofort verdauen). Spielstände ohne Magen laden normal, vorhandene Enzyme-Stufen bleiben und wirken jetzt im Darm.
+
+**Bot-Simulation** (verdaut nach jedem Run den ganzen Magen sofort; `noDigest` schaltet das ab):
+
+| | vorher (heute gemessen) | Stufe 15 |
+|---|---|---|
+| Kirsche frei | nach 12 Runs | nach 13–14 Runs |
+| Walnuss frei | nach 32–33 Runs | nach 34–36 Runs |
+| Walnuss-Zeit bis zum ersten Run mit ≥ 100 Walnusskernen | 12–15 min | 11–16 min |
+| Verdaut / gefressen | – | ~1,0 früh, ~1,05 später |
+
+Der Bot kauft immer das Billigste und damit auch Peristaltik und Zottenwuchs, die in der Johannisbeere wenig bringen, Enzyme dagegen fast nie (wie vorher). Wer Enzyme kauft und zielt, ist schneller.
+
+Offen für die nächsten Schritte: Schleimhautfalten (bessere Schalen), Goldzotten, Darm-Knoten für jede weitere Welt (bei ~10 geplanten Früchten), Verpuppung und Schmetterling als eigene Minispiele (ohne Neustart).
+
+## Umsetzung Stufe 16: Darm als Nebenschiene (Falten, Zotten, Blinddarm) (Brett ersetzt durch Stufe 17)
+
+Rückmeldung Bene: Nährstoff-Zotten und Blinddarm praktisch nicht zu treffen, unklar, was die Knoten bringen. Danach Prototypen ausprobiert (Ordner `prototypen/`): Rhythmus-Peristaltik und Zotten-Förderband verworfen, Plinko mit selbst gesetzten Zilien für gut befunden. Wirtschaft (Portionen, Magen, Umwandlung in die eigene Welt) bleibt aus Stufe 16.
+
+Vorher recherchiert, was gute Plinko-/Pachinko-/Peggle-Spiele ausmacht: eine Entscheidung, die zählt (Zielen); Ziele auf dem Brett; seltene große Momente; kurze Runden; Wert statt Menge; Nebenspiele bleiben freiwillig. Entscheidungen Bene (29.09.2026): Nebenschiene, kurze Runden mit wenigen Brocken, Darm-Nährstoffe werden nur in die Währung der eigenen Welt umgewandelt, der Magen füllt sich mit einem festen Anteil von allem. Kein pyramidales Brett, sondern nah am echten Darm.
+
+- **Wirtschaft:** Die Fruchtwährung geht wieder **direkt aufs Konto** (wie vor Stufe 15). Zusätzlich legt jeder Run eine **Portion Nahrungsbrei** in den Magen: 25 % der gefressenen Fruchtwährung (`GUT.share`), Anteil aus Zuckerkristallen getrennt. Der Magen fasst **5 Portionen** (`GUT.cap0`), dann "Magen voll", weitere Runs legen nichts mehr hinein. Enzyme sind wieder im Baum (wie vor Stufe 15).
+- **Brett nach dem Dünndarm:** Ringfalten (Kerckring-Falten) ragen von beiden Wänden hinein und fallen zur Öffnung ab, obendrauf die Zotten. Die Öffnung wandert von Reihe zu Reihe (mindestens 90 breit versetzt). Am Anfang **5 Faltenreihen**. Unten der Boden mit dem Übergang zum **Dickdarm** in der Mitte (Rest wird ausgeschieden) und einer kleinen Grube für den **Blinddarm** nahe einer Wand (Seite je Runde zufällig): Wer hineinfällt, dessen Rest zählt ×2. Jede Runde ein neues Brett.
+- **Wert = Aufnahme statt Strecke:** Jeder Brocken trägt Nährstoffe. Jeder Kontakt mit den Zotten nimmt einen Teil dessen auf, was noch drin ist: ein Schlag beim Aufprall, laufend beim Gleiten. Der Brocken wird dabei sichtbar leerer (Kern schrumpft). Mehr als alles geht nicht. Am Ende jedes Brockens steht, was er gebracht hat und wie viel Prozent aufgenommen wurden.
+- **Brockenarten je Frucht** (`GUT.types`): Beere klein und sprunghaft, Kirsche schwer, der Stein zerbricht beim ersten harten Aufprall in zwei Hälften, Walnuss als Öltropfen, der kaum springt und langsam an den Falten entlanggleitet. Zuckerbrocken aus Zuckerkristallen. **Kalibriert** (`werkzeuge/darm-kalibrierung.js`): Jede Art nimmt bei zufälligem Pförtner im Schnitt knapp 50 % auf. Die Unterschiede liegen in der Streuung, nicht im Schnitt:
+
+| Art | Schnitt | Streuung | bester Pförtner-Platz | Blinddarm |
+|---|---|---|---|---|
+| Beerenbrocken | 47 % | hoch (0,27) | 61 % | 5 % |
+| Kirschbrocken | 49 % | mittel (0,16) | 55 % | 4 % |
+| Öltropfen | 50 % | niedrig (0,09) | 56 % | 0 % |
+| Zuckerbrocken | 47 % | hoch (0,24) | 58 % | 4 % |
+
+- **Runde:** Jede Portion wird zu 3 Brocken (plus ein Zuckerbrocken, wenn Kristalle gefressen wurden), bei vollem Magen also etwa 15. **Einwurf per Klick/Leertaste**, einzeln, am Pförtner (Maus, Finger, Pfeiltasten/A/D). "Rest automatisch einwerfen" wirft alle 0,9 s einen, der Pförtner pendelt. Ein Brocken braucht etwa 9 s bis unten.
+- **Nährstoff-Zotten:** 3 goldene Zotten je Brett, frei unter einer Öffnung, leicht versetzt. Jede nimmt beim ersten Kontakt eines Brockens 20 % dessen auf, was noch drin ist. Leuchten alle drei: **Verdauungsrausch** mit Zeitlupe, Klang und doppelter Aufnahme für den Rest der Runde (bei zufälligem Pförtner in etwa jeder zweiten Runde).
+- **Umwandeln:** Am Ende der Runde (oder beim Verlassen) werden die Nährstoffe in die Fruchtwährung der eigenen Welt umgewandelt. Wer mitten in der Runde geht, bekommt den Rest als Portion zurück in den Magen.
+- **Darm-Upgrades** (im Darm-Screen, wirken für alle Früchte):
+
+| Knoten | Welt | Wirkung | Stufen, Kosten |
+|---|---|---|---|
+| Längere Zotten | Johannisbeere | Aufnahme +15 % je Stufe | 5, 150 × 1,9 |
+| Darmflora | Johannisbeere | 1 Nährstoff = +10 % Währung je Stufe | 10, 120 × 1,7 |
+| Dehnbarer Magen | Kirsche | +1 Portion (5 → 8) | 3, 200 × 2,2 |
+| Darmschlinge | Kirsche | +1 Faltenreihe (5 → 7) | 2, 400 × 2,5 |
+
+- Umzug von Stufe 15: Reste im alten Magen werden gutgeschrieben, Peristaltik und Zottenwuchs (alt) erstattet, Darmschlinge auf höchstens 2.
+- Admin, Abschnitt Magen: füllen, Portion mit Zucker, leeren, sofort verdauen.
+
+**Bot-Simulation** (verdaut, sobald der Magen voll ist, Pförtner pendelt):
+
+| | ohne Darm (heute gemessen) | Stufe 16 |
+|---|---|---|
+| Kirsche frei | nach 12 Runs | nach 12–13 Runs |
+| Walnuss frei | nach 32–33 Runs | nach 33 Runs |
+| Walnuss-Zeit bis zum ersten Run mit ≥ 100 Walnusskernen | 12–15 min | 9–14 min |
+
+Der Darm bringt dem Bot etwa 15–25 % zusätzliche Fruchtwährung, kostet ihn aber auch Käufe. Getestet: Anteil 30 % (Walnuss knackt nach 8–13 min), 20 % (9–14 min); gewählt 25 %.
+
+Ideen für später: mehr Brockenarten für jede neue Frucht (je eine eigene Eigenschaft), weitere Sonderzotten (Enzymdrüse, Bakterien-Kolonie mit Multiball), Peristaltik-Welle als aktive Fähigkeit im Darm, Sättigung (voller Magen gibt im nächsten Run Ausdauer).
+
+## Umsetzung Stufe 17: Darm-Plinko mit Zilien (aus dem Prototyp `prototypen/darm-plinko.html`)
+
+- **Brett:** Freies Feld mit Flimmerhärchen an beiden Wänden (Welle nach unten, nur Anzeige). Oben der **Magensack** mit Speiseröhre und Falten; die Brocken liegen darin als Haufen, der Brocken am Ausgang ist markiert und kommt als Nächstes. Vom Ausgang (Pylorus) führt ein **Schlauch** mit Muskelringen zum **Pförtner**, der als Schließmuskel in der Darmdecke sitzt. Beim Einwerfen rutscht der Brocken sichtbar durch den Schlauch (0,55 s).
+- **Selbst gestellt:** Pförtner und **Zilien** werden angefasst und gezogen, auch mitten in der Runde. Am Anfang **3 Zilien**. Zilien halten Abstand zur Wand (Spalt breiter als der dickste Brocken, sonst klemmt er) und zueinander (die Härchen berühren sich nicht). Einwerfen: Klick auf den Magen, Leertaste oder "Rest automatisch einwerfen" (alle 0,9 s).
+- **Treffer:** Zilien sind federnde Büschel. Eine Zilie gibt einem Brocken höchstens **3, dann 2, dann 1 Punkt**, danach nur weiche Abpraller. Der Abprall der Beere ist gedeckelt auf etwa 5 Zilienradien. Jeder Brocken bringt mindestens 1 Punkt.
+- **Ausgänge unten** (anatomisch: Aufnahmewege und Weiterweg): Pfortader ×1,5 (Blut zur Leber), Lymphgefäß ×1,3 (für Walnussöl ×2, Fett geht über die Lymphe), Blinddarm ×2 (schmal, mit Wurmfortsatz), Dickdarm ×1.
+- **Früchte unterschiedlich:** Beere klein und leicht, springt voll ab; Kirsche groß und schwer, springt halb so weit; Walnussöl als Tropfen, zäh, haftet an der Zilie und läuft um sie herum. Also braucht jede Frucht eigentlich ihre eigene Stellung.
+- **Kein Zufall:** feste Schrittweite (1/240 s), kein Zufallsschubs beim Einwurf. Gleiche Frucht + gleiche Stellung = gleicher Weg. Liegt ein Brocken genau auf der Kuppe einer Zilie oder bleibt fast stehen, schieben ihn die Härchen fest definiert zur Seite.
+- **Ertrag:** Brocken trägt die Nährstoffe seiner Portion (Portion / 3, Zuckerkristalle machen ihn nahrhafter). Ertrag = Nährstoffe × Punkte / **14** × Darmflora, sofort in der Währung seiner Welt. Mit der Grundstellung bringt ein zufälliger Pförtner im Schnitt 2,5 bis 3 Punkte, die beste Pförtner-Stelle 10,5 (Beere), 19,5 (Kirsche), 14 (Walnuss); durch Umstellen der Zilien geht mehr.
+- **Stellung wird gespeichert** (`save.gutLay`): die zuletzt benutzte für alle Früchte. **Gedächtnis** (Upgrade) merkt sich eine Stellung je Frucht: Beim Einwurf gleiten Pförtner und Zilien in die Stellung der Frucht, die als Nächstes kommt; gespeichert wird die Stellung, mit der ein Brocken dieser Frucht geworfen wurde.
+- **Darm-Upgrades:**
+
+| Knoten | Welt | Wirkung | Stufen, Kosten |
+|---|---|---|---|
+| Mehr Zilien | Johannisbeere | +1 Zilie (3 → 5), erscheint an freier Stelle | 2, 250 × 3 |
+| Darmflora | Johannisbeere | +10 % Ertrag je Stufe | 10, 120 × 1,7 |
+| Dehnbarer Magen | Kirsche | +1 Portion (5 → 8) | 3, 200 × 2,2 |
+| Gedächtnis | Kirsche | eine Stellung je Frucht | 1, 600 |
+
+- Umzug von Stufe 16: Längere Zotten und Darmschlinge werden erstattet und entfernt. Magen, Portionen und Admin-Abschnitt bleiben.
+- `werkzeuge/darm-kalibrierung.js` zeigt Punkte je Frucht und Pförtner-Stelle; die Bot-Simulation verdaut bei vollem Magen mit der besten Pförtner-Stelle je Frucht (Option `randomPf` für zufällig).
+
+**Bot-Simulation:**
+
+| | ohne Darm | Stufe 17, beste Pförtner-Stelle | Stufe 17, Pförtner zufällig |
+|---|---|---|---|
+| Kirsche frei | nach 12 Runs | nach 12–13 Runs | nach 13 Runs |
+| Walnuss frei | nach 32–33 Runs | nach 30–32 Runs | nach 34 Runs |
+| Walnuss-Zeit bis ≥ 100 Walnusskerne in einem Run | 12–15 min | 10–10,5 min | 16,5 min |
+
+Offen: mehr Brockenarten für neue Früchte (jede mit eigener Eigenschaft), Balance der Darm-Upgrades beim Anspielen, eventuell Sonderzilien.
+
 ## Plan: Setzkasten und Fressbuch (Sonderstellen umgesetzt in Stufe 10)
 
 Ziel: Im Run gibt es etwas anzusteuern, und es gibt Langzeitziele ohne Prestige. Reihenfolge der Umsetzung: Sonderstellen → Setzkasten → Fressbuch → danach neue Früchte.
@@ -481,6 +628,7 @@ Weitere Seiten wie Newgrounds, CrazyGames oder Poki sind eher für kostenlose Br
 
 ## Offene Punkte
 
+- Darm (Stufe 17) im Spiel anspielen: Ist der Ertrag (ganz verdaut ab 14 Punkten) passend? Lohnt sich das Umstellen je Frucht, und kommt Gedächtnis zur richtigen Zeit?
 - Ausdauer- und Ertragswerte sind per Bot-Simulation vorjustiert (siehe "Umsetzung Stufe 1"), müssen aber noch von Hand angespielt werden.
 - Kosten- und Wachstumskurven feinjustieren, sobald man selbst gespielt hat.
 - Welten 4–6 (Pflaume, Apfel, Kürbis): Aufbau, Werte, Upgrade-Ringe.

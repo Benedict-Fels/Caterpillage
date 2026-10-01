@@ -318,6 +318,15 @@ const AU = (() => {
     choose(){ jingle('celesta', [72, 76, 79, 84, 88], 0.09, 0.55); },
     pauseOn(){ jingle('marimba', [72, 67], 0.07, 0.4); },
     pauseOff(){ jingle('marimba', [67, 72], 0.07, 0.4); },
+    // Darm: jede Zotte einen Ton höher (Pentatonik), je öfter der Brocken schon getroffen hat
+    zotte(n = 1){ const sc = [72, 74, 76, 79, 81, 84, 86, 88, 91, 93, 96, 98]; INST.celesta(sc[Math.min(sc.length - 1, Math.max(0, n - 1))], ac.currentTime, 0.16, 0.12, sfxBus); },
+    schale(v = 1){ INST.marimba(v >= 1 ? 67 : v >= 0.8 ? 60 : 48, ac.currentTime, v >= 1 ? 0.35 : 0.25, 0.2, sfxBus); },
+    plopp(){ const t = ac.currentTime; tone('sine', 520, t, 0.08, 0.25, null, { to: 260 }); hiss(t, 0.05, 0.12, 'bandpass', 900, { q: 2 }); },
+    naehr(){ jingle('celesta', [84, 88, 91], 0.05, 0.45); },
+    darmrausch(){ jingle('marimba', [60, 64, 67, 72, 76, 79, 84], 0.05, 0.8); pad([60, 67, 72, 76], ac.currentTime + 0.2, 1.4, 0.03, sfxBus); },
+    blind(){ jingle('celesta', [72, 79, 84, 88, 91, 96], 0.06, 0.6); INST.bass(36, ac.currentTime, 0.9, 0.6, sfxBus); },
+    knack(){ const t = ac.currentTime; hiss(t, 0.03, 0.35, 'highpass', 3000); tone('sine', 1800, t, 0.04, 0.15); },
+    verdaut(){ jingle('marimba', [60, 64, 67, 72], 0.08, 0.7); INST.celesta(84, ac.currentTime + 0.34, 0.4, 0.4, sfxBus); },
   };
   function beam(d){
     if (!ok()) return;

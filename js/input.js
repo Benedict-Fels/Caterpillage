@@ -70,6 +70,7 @@ function loop(now){
     draw();
     if (++frame % 6 === 0) hud();
   }
+  if (screen === 'gut') gutFrame(dt);
   // Taktgeber für die Musik: Biss-Takt in Echtzeit und Phase bis zum nächsten Biss
   if (screen === 'game' && run.active && !run.over && !paused && !modalOpen() && !dev.manual){
     AU.clock(effRate() * admMul('speed'), cat.t - P_BITE * 0.45, run.moving);

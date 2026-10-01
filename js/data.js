@@ -45,7 +45,7 @@ const WORLDS = [
       L: { sw: '#E9C457', note: 'platzt auf, das Öl fließt zur Raupe (Walnusskerne)' } } }, spRot: 0.87, drain: 2.2, name: 'Walnuss', fruitCur: 'Nussholz', coreCur: 'Walnusskerne', color: '#8A6A3E', R: 175,
     layers: {
       1: { name: 'Grüne Hülle', hp: 10, cost: 1.4, f: 0.2, sw: '#5E8A34', note: 'weich, bringt wenig' },
-      2: { name: 'Holzschale', hp: 270, cost: 4.2, f: 0.5, hard: true, sw: '#8E6438', note: 'steinhart, auch die Trennwände innen' },
+      2: { name: 'Holzschale', hp: 220, cost: 4.2, f: 0.5, hard: true, sw: '#8E6438', note: 'steinhart, auch die Trennwände innen' },
       3: { name: 'Nusskern', hp: 15, cost: 1.4, k: 0.03, juicy: true, sw: '#DDBF86', note: 'weich, der Lohn' },
     },
     breakLayer: 3, breakText: 'Geknackt!', unlockCost: 200,
@@ -60,11 +60,12 @@ const EMPTY_BITE = 0.2;                                  // Ausdauer für einen 
 /* =====================================================================
    Sonderstellen (Schicht 4). Pro Frucht genau eine Art. layer(host, w) leitet die
    Werte aus der Wirtsschicht ab (spHost der Welt): Fruchtfleisch, bei der Walnuss die grüne Hülle.
-   spHosts = abweichender Wirt je Art (Walnuss: Öltropfen und Kristalle im Nusskern), spKinds = erlaubte Arten,
+   spHosts = abweichender Wirt je Art (Walnuss: Öltropfen und Kristalle im Nusskern), spKinds = erlaubte Arten (Standard: alle),
    spOver = Abweichungen je Art (Walnuss: Öltropfen statt Saftblase),
    spRot = Abstand der Faulstelle von der Mitte (relativ, sie sitzt auf dem Rand).
    n = Anzahl von–bis, r = Radius relativ zur Frucht.
    ===================================================================== */
+const SP_STEP = 0.05;                                      // Anteil der Früchte je Stufe eines Sonderstellen-Knotens (5 × 5 % = 25 % je Art)
 const SPECIAL = {
   blase: { name: 'Saftblase', plural: 'Saftblasen', n: [2, 4], r: 0.1, mult: 3.5,
     layer: h => ({ name: 'Saftblase', hp: h.hp, cost: h.cost, f: 0, juicy: true, sw: '#F4A8B4', note: 'platzt beim Anbeißen, der Saft fliegt zur Raupe', snd: 'squish' }) },
@@ -170,20 +171,22 @@ const BR = { Kiefer: -90, Maul: -30, Ausdauer: 30, Verdauung: 90, Tempo: 150, 'F
    Alle Knoten wirken linear: jede Stufe bringt gleich viel, auch die erste. */
 const SH = {
   power: s => `Bisskraft ${fmt2(s.power)}`,
-  crit: s => `${pct(s.crit)} Krit-Chance · ${pct(s.critMult)} Krit-Schaden`,
+  crit: s => `${pct(s.crit)} Krit-Chance`,
+  critDmg: s => `${pct(s.critMult)} Krit-Schaden`,
   mouth: s => `Maulgröße ${fmt2(s.mouth)}`,
   stamina: s => `Ausdauer ${s.stamina}`,
   hard: s => `Kosten in harten Schichten ${pct(s.hardMult)}`,
   rate: s => `${fmt2(s.rate)} Bisse/s`,
   segs: s => `${s.segs} Segmente`,
   yieldOf: w => s => `Ertrag ${pct(s.yieldW[w])} ${WORLDS[w].fruitCur}`,
+  sp: k => s => `${Math.round(s.spP[k] * 100)} % der Früchte` + (s.spOff[k] ? ' (aus)' : ''),
 };
 const UPG = [
   // --- Johannisbeere ---
   { id: 'kiefer', w: 0, ring: 1, br: 'Kiefer', off: 0, name: 'Kiefer', max: 20, cost: 25, grow: 1.55,
     desc: 'Mehr Bisskraft: +1 je Stufe.', show: SH.power },
   { id: 'krit', w: 0, ring: 2, br: 'Kiefer', off: -20, parent: 'kiefer', need: 3, name: 'Kritischer Biss', max: 5, cost: 100, grow: 1.9,
-    desc: 'Je Stufe +2 % Chance auf einen kritischen Biss und +10 % Krit-Schaden. Jede Welt hat einen eigenen Krit-Knoten.', show: SH.crit },
+    desc: 'Je Stufe +1 % Chance auf einen kritischen Biss (150 % Schaden). Jede Welt bringt einen eigenen Knoten für die Krit-Chance, ab der Kirsche auch einen für den Krit-Schaden.', show: SH.crit },
   { id: 'mandibeln', w: 0, ring: 2, br: 'Kiefer', off: 20, parent: 'kiefer', need: 6, name: 'Scharfe Mandibeln', max: 10, cost: 600, grow: 1.8,
     desc: 'Je Stufe +10 % Bisskraft.', show: SH.power },
   { id: 'maul', w: 0, ring: 1, br: 'Maul', off: 0, name: 'Maul', max: 10, cost: 50, grow: 1.7,
@@ -198,6 +201,8 @@ const UPG = [
     desc: 'Mehr Beerensaft aus jedem Happen: +15 % je Stufe. Wirkt nur in der Johannisbeere.', show: SH.yieldOf(0) },
   { id: 'enzyme', w: 0, ring: 2, br: 'Verdauung', off: 10, parent: 'verdauung', need: 5, name: 'Enzyme', max: 10, cost: 500, grow: 1.8,
     desc: 'Nochmals mehr Beerensaft: +30 % je Stufe. Wirkt nur in der Johannisbeere.', show: SH.yieldOf(0) },
+  { id: 'sp_faul', w: 0, ring: 2, br: 'Verdauung', off: -16, parent: 'verdauung', need: 2, spKind: 'faul', name: 'Faulstellen', max: 5, cost: 120, grow: 1.8,
+    desc: 'Schaltet Faulstellen frei: weiche, braune Flecken am Rand, ein schneller Weg nach innen. Dafür bringen sie weniger als die Schale, die sie ersetzen. Jede Stufe: +5 % der Früchte. Lassen sich ausschalten.', show: SH.sp('faul') },
   { id: 'tempo', w: 0, ring: 1, br: 'Tempo', off: 0, name: 'Tempo', max: 7, cost: 35, grow: 1.6,
     desc: 'Schnellerer Biss-Takt: +0,05 Bisse/s je Stufe. Jede Welt bringt ihren eigenen Tempo-Knoten.', show: SH.rate },
   { id: 'segment', w: 0, ring: 2, br: 'Tempo', off: 10, parent: 'tempo', need: 2, name: 'Segment', max: 4, cost: 60, grow: 1.9,
@@ -209,14 +214,18 @@ const UPG = [
   // --- Kirsche ---
   { id: 'kiefer2', w: 1, ring: 3, br: 'Kiefer', off: 0, parent: 'kiefer', need: 5, name: 'Kirschkiefer', max: 15, cost: 60, grow: 1.6,
     desc: 'Deutlich mehr Bisskraft: +3 je Stufe.', show: SH.power },
-  { id: 'krit2', w: 1, ring: 3, br: 'Kiefer', off: -20, parent: 'krit', need: 1, name: 'Krit II', max: 5, cost: 250, grow: 1.9,
-    desc: 'Je Stufe +2 % Chance und +10 % Krit-Schaden.', show: SH.crit },
+  { id: 'krit2', w: 1, ring: 3, br: 'Kiefer', off: -20, parent: 'krit', need: 1, name: 'Krit-Chance II', max: 5, cost: 250, grow: 1.9,
+    desc: 'Je Stufe +1 % Chance auf einen kritischen Biss.', show: SH.crit },
+  { id: 'kritd2', w: 1, ring: 3, br: 'Kiefer', off: 38, parent: 'mandibeln', need: 1, name: 'Krit-Schaden II', max: 5, cost: 250, grow: 1.9,
+    desc: 'Je Stufe +5 % Krit-Schaden.', show: SH.critDmg },
   { id: 'maul2', w: 1, ring: 3, br: 'Maul', off: 10, parent: 'maul', need: 2, name: 'Weiter Schlund', max: 5, cost: 200, grow: 1.9,
     desc: 'Noch mehr Maul: +0,3 je Stufe.', show: SH.mouth },
   { id: 'ausdauer2', w: 1, ring: 3, br: 'Ausdauer', off: -10, parent: 'ausdauer', need: 3, name: 'Fettreserve', max: 15, cost: 50, grow: 1.55,
     desc: 'Mehr Ausdauer: +10 je Stufe.', show: SH.stamina },
   { id: 'verdauung2', w: 1, ring: 3, br: 'Verdauung', off: -10, parent: 'verdauung', need: 3, name: 'Kirschmagen', max: 15, cost: 80, grow: 1.6,
     desc: 'Mehr Kirschsaft: +15 % je Stufe. Wirkt nur in der Kirsche.', show: SH.yieldOf(1) },
+  { id: 'sp_kristall', w: 1, ring: 3, br: 'Verdauung', off: -28, parent: 'sp_faul', need: 1, spKind: 'kristall', name: 'Zuckerkristalle', max: 5, cost: 250, grow: 1.8,
+    desc: 'Schaltet Zuckerkristalle frei: harte, süße Büschel mit viel Ertrag (in der Walnuss im Nusskern). Jede Stufe: +5 % der Früchte. Lassen sich ausschalten.', show: SH.sp('kristall') },
   { id: 'tempo2', w: 1, ring: 3, br: 'Tempo', off: -10, parent: 'tempo', need: 1, name: 'Takt II', max: 7, cost: 80, grow: 1.7,
     desc: 'Schnellerer Biss-Takt: +0,05 Bisse/s je Stufe.', show: SH.rate },
   { id: 'segment2', w: 1, ring: 3, br: 'Tempo', off: 10, parent: 'segment', need: 1, name: 'Segment II', max: 3, cost: 300, grow: 2.2,
@@ -225,8 +234,10 @@ const UPG = [
   // --- Walnuss ---
   { id: 'kiefer3', w: 2, ring: 4, br: 'Kiefer', off: 0, parent: 'kiefer2', need: 3, name: 'Nussknacker', max: 15, cost: 60, grow: 1.6,
     desc: 'Kiefer, die Holz knacken: +8 Bisskraft je Stufe.', show: SH.power },
-  { id: 'krit3', w: 2, ring: 4, br: 'Kiefer', off: -20, parent: 'krit2', need: 1, name: 'Krit III', max: 5, cost: 250, grow: 1.9,
-    desc: 'Je Stufe +2 % Chance und +10 % Krit-Schaden.', show: SH.crit },
+  { id: 'krit3', w: 2, ring: 4, br: 'Kiefer', off: -20, parent: 'krit2', need: 1, name: 'Krit-Chance III', max: 5, cost: 250, grow: 1.9,
+    desc: 'Je Stufe +1 % Chance auf einen kritischen Biss.', show: SH.crit },
+  { id: 'kritd3', w: 2, ring: 4, br: 'Kiefer', off: 38, parent: 'kritd2', need: 1, name: 'Krit-Schaden III', max: 5, cost: 250, grow: 1.9,
+    desc: 'Je Stufe +5 % Krit-Schaden.', show: SH.critDmg },
   { id: 'mandibeln2', w: 2, ring: 4, br: 'Kiefer', off: 20, parent: 'mandibeln', need: 1, name: 'Stahlmandibeln', max: 8, cost: 600, grow: 1.8,
     desc: 'Je Stufe +15 % Bisskraft.', show: SH.power },
   { id: 'ausdauer3', w: 2, ring: 4, br: 'Ausdauer', off: -10, parent: 'ausdauer2', need: 3, name: 'Winterspeck', max: 15, cost: 50, grow: 1.55,
@@ -235,10 +246,25 @@ const UPG = [
     desc: 'Harte Schichten kosten noch weniger Ausdauer: −4 % je Stufe.', show: SH.hard },
   { id: 'verdauung3', w: 2, ring: 4, br: 'Verdauung', off: -10, parent: 'verdauung2', need: 2, name: 'Nussmagen', max: 15, cost: 80, grow: 1.6,
     desc: 'Mehr Nussholz: +15 % je Stufe. Wirkt nur in der Walnuss.', show: SH.yieldOf(2) },
+  { id: 'sp_blase', w: 2, ring: 4, br: 'Verdauung', off: -28, parent: 'sp_kristall', need: 1, spKind: 'blase', name: 'Saftblasen', max: 5, cost: 300, grow: 1.8,
+    desc: 'Schaltet Saftblasen frei (in der Walnuss Öltropfen): Sie platzen beim Anbeißen, der Saft fliegt von selbst zur Raupe. Jede Stufe: +5 % der Früchte. Lassen sich ausschalten.', show: SH.sp('blase') },
   { id: 'tempo3', w: 2, ring: 4, br: 'Tempo', off: -10, parent: 'tempo2', need: 1, name: 'Takt III', max: 7, cost: 80, grow: 1.7,
     desc: 'Schnellerer Biss-Takt: +0,05 Bisse/s je Stufe.', show: SH.rate },
   { id: 'segment3', w: 2, ring: 4, br: 'Tempo', off: 10, parent: 'segment2', need: 1, name: 'Segment III', max: 3, cost: 400, grow: 2.2,
     desc: 'Noch ein Segment.', show: SH.segs },
+  // --- Darm (gut: stehen nicht im Baum, sondern im Darm-Screen; wirken für alle Früchte) ---
+  { id: 'zilien', w: 0, gut: true, name: 'Mehr Zilien', max: 2, cost: 250, grow: 3,
+    desc: 'Eine Zilie mehr im Darm. Sie taucht an einer freien Stelle auf und lässt sich wie die anderen verschieben.',
+    show: s => `${s.gutCilia} Zilien` },
+  { id: 'darmflora', w: 0, gut: true, name: 'Darmflora', max: 10, cost: 120, grow: 1.7,
+    desc: 'Mehr nützliche Bakterien: Jeder verdaute Brocken bringt 10 % mehr Fruchtwährung.',
+    show: s => `×${fmt2(s.gutConv)} Ertrag` },
+  { id: 'magen', w: 1, gut: true, name: 'Dehnbarer Magen', max: 3, cost: 200, grow: 2.2,
+    desc: 'Der Magen fasst eine Portion mehr, du kannst also einen Run länger fressen, bevor du verdauen musst.',
+    show: s => `${s.gutCap} Portionen` },
+  { id: 'gedaechtnis', w: 1, gut: true, name: 'Gedächtnis', max: 1, cost: 600, grow: 1,
+    desc: 'Der Darm merkt sich eine eigene Stellung (Pförtner und Zilien) für jede Frucht. Kommt ein Brocken einer anderen Frucht an die Reihe, gleiten Pförtner und Zilien von selbst in dessen Stellung.',
+    show: s => s.gutMem ? 'eine Stellung je Frucht' : 'eine Stellung für alles' },
 ];
 // Ausbau-Knoten jeder Fähigkeit. Sie erscheinen im Ast "Fähigkeiten" im Ring der Welt nach der Wahl
 // und kosten deren Fruchtwährung plus Kernwährung der geschafften Welt.

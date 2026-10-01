@@ -26,7 +26,7 @@ function buildTree(){
   root.style.left = '50%'; root.style.top = '50%';
   root.innerHTML = '<span class="lbl">Raupe</span>';
   tree.appendChild(root);
-  for (const u of UPG){
+  for (const u of UPG.filter(inTree)){
     const b = document.createElement('button');
     b.className = 'node' + (u.ab ? ' abn' : ''); b.id = 'n-' + u.id;
     b.addEventListener('click', () => {
@@ -63,10 +63,10 @@ function renderTree(){
   svg.setAttribute('viewBox', `${50 - v} ${50 - v} ${2 * v} ${2 * v}`);
   let s = '';
   for (let w = 1; w < save.unlocked; w++){
-    const ta = 60 * Math.PI / 180, tr = BANDS[w] + 1.2;
-    s += `<circle class="band" cx="50" cy="50" r="${BANDS[w]}"/><text x="${50 + Math.cos(ta) * tr}" y="${50 + Math.sin(ta) * tr}" transform="rotate(-30 ${50 + Math.cos(ta) * tr} ${50 + Math.sin(ta) * tr})">${WORLDS[w].name.toUpperCase()}</text>`;
+    const ta = 121 * Math.PI / 180, tr = BANDS[w] + 1.2;
+    s += `<circle class="band" cx="50" cy="50" r="${BANDS[w]}"/><text x="${50 + Math.cos(ta) * tr}" y="${50 + Math.sin(ta) * tr}" transform="rotate(31 ${50 + Math.cos(ta) * tr} ${50 + Math.sin(ta) * tr})">${WORLDS[w].name.toUpperCase()}</text>`;
   }
-  for (const u of UPG){
+  for (const u of UPG.filter(inTree)){
     const b = $('n-' + u.id), vis = visible(u);
     b.hidden = !vis;
     if (!vis) continue;
@@ -78,7 +78,8 @@ function renderTree(){
     b.classList.toggle('max', l >= u.max);
     b.classList.toggle('can', canBuy(u));
     b.classList.toggle('sel', selected === u.id);
-    b.innerHTML = `<span class="lv">${l}<small>/${u.max}</small></span><span class="lbl">${u.name}</span>`;
+    const off = u.spKind && (save.spOff || {})[u.spKind];
+    b.innerHTML = `<span class="lv">${l}<small>/${u.max}</small></span><span class="lbl">${u.name}${off ? ' (aus)' : ''}</span>`;
     b.setAttribute('aria-label', `${u.name}, Stufe ${l} von ${u.max}` + (open ? '' : ', gesperrt'));
   }
   svg.innerHTML = s;
@@ -94,8 +95,9 @@ function renderShop(){
   $('sub').textContent = `${WORLDS[save.world].name} · Upgrades`;
 
   renderTree();
+  renderStomach();
 
-  if (!visible(U[selected])) selected = 'kiefer';
+  if (!visible(U[selected]) || !inTree(U[selected])) selected = 'kiefer';
   const u = U[selected], l = lv(u.id), open = unlocked(u), maxed = l >= u.max;
   const c = costOf(u), wn = WORLDS[c.w].name;
   let html = `<div class="branch">${u.br} · ${wn}</div><h3>${u.name}</h3>
@@ -111,8 +113,18 @@ function renderShop(){
       html += `<button class="wide primary" id="buyBtn" ${canBuy(u) ? '' : 'disabled'}>Kaufen: ${costHtml(c)}</button>${short ? `<p class="note">${short}</p>` : ''}`;
     }
   }
+  if (u.spKind && l >= 1){                                   // Sonderstellen lassen sich ausschalten
+    const off = !!(save.spOff || {})[u.spKind];
+    html += `<button class="wide" id="spTog">${u.name} ${off ? 'einschalten' : 'ausschalten'}</button>`;
+  }
   if (adm.on) html += `<div class="admrow"><span>Admin</span><button data-lv="0">0</button><button data-lv="-1">−1</button><button data-lv="1">+1</button><button data-lv="max">Max</button></div>`;
   $('detail').innerHTML = html;
+  const st = $('spTog');
+  if (st) st.onclick = () => {
+    save.spOff = save.spOff || {};
+    save.spOff[u.spKind] = !save.spOff[u.spKind];
+    AU.sfx('tick'); S = stats(); persist(); renderShop();
+  };
   const bb = $('buyBtn');
   if (bb) bb.onclick = () => buy(u);
   for (const b of $('detail').querySelectorAll('[data-lv]')) b.onclick = () => {
@@ -131,6 +143,16 @@ function renderShop(){
 
   renderWorlds();
   renderAbilities();
+}
+
+/* Magen im Upgrade-Screen: Portionen, die auf den Darm warten */
+function renderStomach(){
+  const el = $('stomach'), n = save.gut.p.length, cap = S.gutCap;
+  const dots = Array.from({ length: cap }, (_, i) => `<span class="pdot${i < n ? ' on' : ''}" ${i < n ? `style="background:${WORLDS[save.gut.p[i].w].color}"` : ''}></span>`).join('');
+  el.innerHTML = `<div class="meter-head"><span>Magen</span><output>${n} / ${cap} Portionen</output></div><div class="pdots">${dots}</div>
+    <p class="note">${n >= cap ? 'Voll. Erst verdauen, sonst geht nichts mehr hinein.' : n ? 'Jeder Run füllt eine Portion. Verdauen bringt zusätzliche Fruchtwährung.' : 'Jeder Run füllt eine Portion Nahrungsbrei. Im Darm wird daraus zusätzliche Fruchtwährung.'}</p>
+    <button class="wide${n >= cap ? ' primary' : ''}" id="toGut2">${n ? 'Verdauen' : 'Zum Darm (Upgrades)'}</button>`;
+  $('toGut2').onclick = () => openGut();
 }
 
 function renderWorlds(){

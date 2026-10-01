@@ -10,7 +10,7 @@ function removePixel(i, k, vx, vy, src = 'Biss'){
   type[i] = 0; D[i*4+3] = 0; eaten[k]++;
   const L = W.layers[k], m = meter(src);
   m.px++;
-  if (L.f){ const g = L.f * S.yieldW[WI]; run.f += g; run.gF += g; m.f += g; }
+  if (L.f){ const g = L.f * S.yieldW[WI]; run.f += g; run.gF += g; m.f += g; if (k === 4 && SP.kind === 'kristall') run.fx += g; }   // fx: wird zu Kristall-Brocken im Darm
   if (L.k){ run.k += L.k; run.gK += L.k; m.k += L.k; }
   if (L.juicy && save.abil.passive === 'saftsog'){
     const cap = L.cost * (0.6 + 0.07 * abNode('saftsog', 1));
@@ -100,21 +100,33 @@ function bite(){
   cand.sort((a, b) => a[5] - b[5]);
   // Jedes erreichbare Pixel bringt seinen Anteil Kraft mit; ausgegeben wird sie immer zuerst am vordersten
   // noch stehenden Pixel. So wird der Brocken vor dem Maul ganz weggefressen, statt alles anzukratzen.
+  // Die Kraft bleibt nach Herkunftsschicht getrennt und darf nur in gleich harte oder weichere Pixel
+  // überlaufen: Sonst schiebt weiches Fruchtfleisch seinen ganzen Überschuss in einen angrenzenden Kern.
+  const pool = {}, ord = Object.keys(W.layers).map(Number).sort((a, b) => W.layers[a].hp - W.layers[b].hp);
+  for (const q of ord) pool[q] = 0;
   const open = [];
   for (const c of cand){
     const [i, d, dx, dy, wgt] = c, k = type[i];
     if (!k || !lineFree(h.x, h.y, i % SIM + 0.5, (i / SIM | 0) + 0.5, i)) continue;
+    pool[k] += power * wgt;
     budget += power * wgt;
     hit++;
     if (W.layers[k].cost > hardestCost){ hardestCost = W.layers[k].cost; hardest = k; }
     open.push(c);
-    while (budget > 0 && open.length){
-      const [j, dj, ex, ey] = open[0];
-      if (!type[j]){ open.shift(); continue; }
-      const use = Math.min(budget, Math.max(0, hp[j]));
+    for (let o = 0; o < open.length && budget > 1e-9; o++){
+      const [j, dj, ex, ey] = open[o], kj = type[j];
+      if (!kj){ open.splice(o--, 1); continue; }
+      const need = W.layers[kj].hp;
+      let want = Math.max(0, hp[j]), use = 0;
+      for (const q of ord){                                   // weichste passende Kraft zuerst, harte bleibt für harte Pixel
+        if (W.layers[q].hp < need || !pool[q]) continue;
+        const u = Math.min(pool[q], want - use);
+        pool[q] -= u; use += u;
+        if (use >= want) break;
+      }
+      if (use <= 0) continue;
       budget -= use;
-      if (damage(j, use + 1e-9, ex / (dj || 1) * 30 - cx * 12, ey / (dj || 1) * 30 - cy * 12, src)){ removed++; open.shift(); }
-      else break;
+      if (damage(j, use + 1e-9, ex / (dj || 1) * 30 - cx * 12, ey / (dj || 1) * 30 - cy * 12, src)){ removed++; open.splice(o--, 1); }
     }
   }
   if (save.abil.passive === 'gabeldruese'){

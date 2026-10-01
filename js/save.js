@@ -5,7 +5,9 @@
 /* Die Speicher-Schlüssel tragen noch den alten Arbeitstitel "caterpillage", damit vorhandene Spielstände erhalten bleiben. */
 const SAVE_KEY = 'caterpillage.save.v3', OLD_KEYS = ['caterpillage.save.v2', 'caterpillage.save.v1'];
 const freshSave = () => ({ v: 3, cur: {}, lv: {}, runs: [0, 0, 0, 0, 0, 0], unlocked: 1, world: 0,
-  abil: { own: {}, from: {}, active: null, passive: null }, choice: null, best: {}, last: null });
+  abil: { own: {}, from: {}, active: null, passive: null }, choice: null, best: {}, last: null, spOff: {},
+  gut: { p: [] },                           // Magen: Portionen { w, n, x } (Nährstoffe normal und aus Zuckerkristallen)
+  gutLay: null });                          // Darm-Stellung { pf, z: [[x, y]], per: { Welt: { pf, z } } }
 let save = freshSave();
 const cur = (w, t) => save.cur[w + t] || 0;
 const addCur = (w, t, x) => { save.cur[w + t] = cur(w, t) + x; };
@@ -17,6 +19,8 @@ function loadSave(){
       const d = JSON.parse(raw);
       save = Object.assign(freshSave(), d);
       save.abil = Object.assign(freshSave().abil, d.abil || {});
+      save.gut = Object.assign(freshSave().gut, d.gut || {});
+      migrateGut();
       return;
     }
     const v2 = localStorage.getItem(OLD_KEYS[0]);
@@ -38,6 +42,24 @@ function loadSave(){
       persist();
     }
   } catch (e) { /* kein Speicher verfügbar */ }
+}
+/* Stufe 15 → 16: Magen war eine Pflicht-Station für die Fruchtwährung. Rest gutschreiben, alte Darm-Knoten erstatten. */
+function migrateGut(){
+  const g = save.gut;
+  if (g.f || g.x){
+    for (const t of ['f', 'x']) for (const w in (g[t] || {})) addCur(+w, 'f', g[t][w] || 0);
+    save.gut = { p: [] };
+  }
+  const refund = (id, w, cost, grow, from = 0) => {
+    const l = save.lv[id] || 0;
+    for (let i = from; i < l; i++) addCur(w, 'f', Math.round(cost * Math.pow(grow, i)));
+  };
+  if (save.lv.peristaltik){ refund('peristaltik', 0, 25, 1.55); delete save.lv.peristaltik; }
+  if (save.lv.zotten){ refund('zotten', 0, 200, 1.9); delete save.lv.zotten; }
+  if (save.lv.darmschlinge > 2){ refund('darmschlinge', 1, 300, 2.2, 2); save.lv.darmschlinge = 2; }
+  // Stufe 16 → 17: Falten-Darm durch Zilien-Plinko ersetzt; Längere Zotten und Darmschlinge gibt es nicht mehr
+  if (save.lv.zottenlaenge){ refund('zottenlaenge', 0, 150, 1.9); delete save.lv.zottenlaenge; }
+  if (save.lv.darmschlinge){ refund('darmschlinge', 1, 400, 2.5); delete save.lv.darmschlinge; }
 }
 function persist(){ try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {} }
 

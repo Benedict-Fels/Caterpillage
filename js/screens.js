@@ -4,12 +4,15 @@
    ===================================================================== */
 let screen = 'game';
 function show(which){
+  if (screen === 'gut' && which !== 'gut') gutLeave();       // Unterwegs-Brocken zurück in den Magen
   screen = which;
   $('game').hidden = which !== 'game';
   $('shop').hidden = which !== 'shop';
+  $('gut').hidden = which !== 'gut';
   document.body.classList.toggle('ingame', which === 'game');
   AU.song(which === 'game' ? W.id : 'shop');
   if (which === 'shop'){ paused = false; $('pauseBox').hidden = true; renderShop(); if (save.choice) openChoice(); }
+  if (which === 'gut'){ paused = false; $('pauseBox').hidden = true; $('sub').textContent = 'Verdauen'; renderGutPanel(); }
 }
 
 /* ---------- Pause ---------- */
